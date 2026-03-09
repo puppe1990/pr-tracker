@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Github, LogOut, ExternalLink, GitPullRequest, Clock, User, ChevronRight, AlertCircle } from "lucide-react";
+import { Github, GitPullRequest, Clock, ChevronRight, AlertCircle, KeyRound } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 
 interface PR {
@@ -27,20 +27,34 @@ export default function App() {
   const [prs, setPrs] = useState<PR[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [githubConfigured, setGithubConfigured] = useState<boolean | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedRepo, setSelectedRepo] = useState("all");
+  const [selectedLabel, setSelectedLabel] = useState("all");
 
   const fetchUserData = async () => {
     try {
+      setError(null);
       const response = await fetch("/api/user");
       if (response.ok) {
         const data = await response.json();
         setUser(data);
-        fetchPRs();
+        setGithubConfigured(true);
+        await fetchPRs();
       } else {
+        const data = await response.json().catch(() => null);
         setUser(null);
+        setGithubConfigured(response.status !== 503);
+        if (response.status === 503) {
+          setError("Defina GITHUB_PERSONAL_ACCESS_TOKEN no ambiente do servidor para consultar a API do GitHub.");
+        } else {
+          setError(data?.error || "Não foi possível carregar os dados do GitHub.");
+        }
         setLoading(false);
       }
     } catch (err) {
       console.error("Error fetching user:", err);
+      setError("Erro de conexão ao buscar dados do GitHub.");
       setLoading(false);
     }
   };
@@ -53,7 +67,8 @@ export default function App() {
         const data = await response.json();
         setPrs(data);
       } else {
-        setError("Não foi possível carregar seus Pull Requests.");
+        const data = await response.json().catch(() => null);
+        setError(data?.error || "Não foi possível carregar seus Pull Requests.");
       }
     } catch (err) {
       setError("Erro de conexão ao buscar PRs.");
@@ -62,47 +77,8 @@ export default function App() {
     }
   };
 
-  const handleLogin = async () => {
-    try {
-      const response = await fetch("/api/auth/github/url");
-      const { url } = await response.json();
-      
-      const width = 600;
-      const height = 700;
-      const left = window.screenX + (window.outerWidth - width) / 2;
-      const top = window.screenY + (window.outerHeight - height) / 2;
-      
-      const authWindow = window.open(
-        url,
-        "github_oauth",
-        `width=${width},height=${height},left=${left},top=${top}`
-      );
-
-      if (!authWindow) {
-        alert("Por favor, permita popups para este site para conectar sua conta do GitHub.");
-      }
-    } catch (err) {
-      console.error("Login error:", err);
-    }
-  };
-
-  const handleLogout = async () => {
-    await fetch("/api/logout", { method: "POST" });
-    setUser(null);
-    setPrs([]);
-  };
-
   useEffect(() => {
     fetchUserData();
-
-    const handleMessage = (event: MessageEvent) => {
-      if (event.data?.type === "OAUTH_AUTH_SUCCESS") {
-        fetchUserData();
-      }
-    };
-
-    window.addEventListener("message", handleMessage);
-    return () => window.removeEventListener("message", handleMessage);
   }, []);
 
   const getRepoName = (url: string) => {
@@ -119,6 +95,27 @@ export default function App() {
       minute: "2-digit",
     }).format(date);
   };
+
+  const repositories = Array.from<string>(
+    new Set(prs.map((pr) => getRepoName(pr.repository_url))) as Set<string>
+  ).sort((a, b) => a.localeCompare(b));
+
+  const labels = Array.from<string>(
+    new Set(prs.flatMap((pr) => pr.labels.map((label) => label.name))) as Set<string>
+  ).sort((a, b) => a.localeCompare(b));
+
+  const filteredPrs = prs.filter((pr) => {
+    const repoName = getRepoName(pr.repository_url);
+    const matchesSearch =
+      searchTerm.trim().length === 0 ||
+      pr.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      repoName.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesRepo = selectedRepo === "all" || repoName === selectedRepo;
+    const matchesLabel =
+      selectedLabel === "all" || pr.labels.some((label) => label.name === selectedLabel);
+
+    return matchesSearch && matchesRepo && matchesLabel;
+  });
 
   if (loading && !user) {
     return (
@@ -146,13 +143,6 @@ export default function App() {
                 <img src={user.avatar_url} alt={user.login} className="w-5 h-5 rounded-full" />
                 <span className="text-sm font-medium text-[#8b949e]">{user.login}</span>
               </div>
-              <button
-                onClick={handleLogout}
-                className="p-2 hover:bg-[#21262d] rounded-lg transition-colors text-[#8b949e] hover:text-red-400"
-                title="Sair"
-              >
-                <LogOut className="w-5 h-5" />
-              </button>
             </div>
           ) : null}
         </div>
@@ -167,21 +157,25 @@ export default function App() {
           >
             <div className="relative">
               <div className="absolute -inset-4 bg-blue-500/20 blur-2xl rounded-full"></div>
-              <GitPullRequest className="w-20 h-20 text-blue-500 relative" />
+              <KeyRound className="w-20 h-20 text-blue-500 relative" />
             </div>
             <div className="space-y-4 max-w-md">
-              <h2 className="text-4xl font-bold text-white tracking-tight">Acompanhe seus PRs</h2>
+              <h2 className="text-4xl font-bold text-white tracking-tight">Configure seu token</h2>
               <p className="text-[#8b949e] text-lg">
-                Conecte sua conta do GitHub para visualizar todos os seus Pull Requests abertos em um só lugar.
+                Este app agora usa um Personal Access Token do GitHub no backend para listar seus Pull Requests abertos.
               </p>
             </div>
-            <button
-              onClick={handleLogin}
-              className="flex items-center gap-3 bg-white text-black px-8 py-4 rounded-xl font-bold hover:bg-[#f0f6fc] transition-all transform hover:scale-105 active:scale-95 shadow-xl shadow-white/5"
-            >
-              <Github className="w-6 h-6" />
-              Conectar com GitHub
-            </button>
+            <div className="max-w-xl w-full rounded-2xl border border-[#30363d] bg-[#161b22] p-6 text-left">
+              <p className="text-sm text-[#8b949e]">
+                Defina <code className="text-white">GITHUB_PERSONAL_ACCESS_TOKEN</code> no arquivo <code className="text-white">.env</code> do servidor e reinicie a aplicação.
+              </p>
+              <p className="text-sm text-[#8b949e] mt-3">
+                Status atual:{" "}
+                <span className={githubConfigured ? "text-emerald-400" : "text-amber-400"}>
+                  {githubConfigured ? "token detectado" : "token ausente"}
+                </span>
+              </p>
+            </div>
           </motion.div>
         ) : (
           <div className="space-y-8">
@@ -192,8 +186,53 @@ export default function App() {
               </div>
               <div className="flex items-center gap-2 text-sm font-medium px-3 py-1 bg-blue-500/10 text-blue-400 rounded-full border border-blue-500/20">
                 <span className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></span>
-                {prs.length} PRs Abertos
+                {filteredPrs.length} de {prs.length} PRs
               </div>
+            </div>
+
+            <div className="grid gap-3 rounded-2xl border border-[#30363d] bg-[#161b22] p-4 sm:grid-cols-3">
+              <label className="space-y-2">
+                <span className="text-xs font-semibold uppercase tracking-[0.2em] text-[#8b949e]">Buscar</span>
+                <input
+                  type="text"
+                  value={searchTerm}
+                  onChange={(event) => setSearchTerm(event.target.value)}
+                  placeholder="Título ou repositório"
+                  className="w-full rounded-xl border border-[#30363d] bg-[#0d1117] px-4 py-3 text-sm text-white outline-none transition focus:border-blue-500"
+                />
+              </label>
+
+              <label className="space-y-2">
+                <span className="text-xs font-semibold uppercase tracking-[0.2em] text-[#8b949e]">Repositório</span>
+                <select
+                  value={selectedRepo}
+                  onChange={(event) => setSelectedRepo(event.target.value)}
+                  className="w-full rounded-xl border border-[#30363d] bg-[#0d1117] px-4 py-3 text-sm text-white outline-none transition focus:border-blue-500"
+                >
+                  <option value="all">Todos</option>
+                  {repositories.map((repository) => (
+                    <option key={repository} value={repository}>
+                      {repository}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="space-y-2">
+                <span className="text-xs font-semibold uppercase tracking-[0.2em] text-[#8b949e]">Label</span>
+                <select
+                  value={selectedLabel}
+                  onChange={(event) => setSelectedLabel(event.target.value)}
+                  className="w-full rounded-xl border border-[#30363d] bg-[#0d1117] px-4 py-3 text-sm text-white outline-none transition focus:border-blue-500"
+                >
+                  <option value="all">Todas</option>
+                  {labels.map((label) => (
+                    <option key={label} value={label}>
+                      {label}
+                    </option>
+                  ))}
+                </select>
+              </label>
             </div>
 
             {error && (
@@ -205,8 +244,8 @@ export default function App() {
 
             <div className="grid gap-4">
               <AnimatePresence mode="popLayout">
-                {prs.length > 0 ? (
-                  prs.map((pr, index) => (
+                {filteredPrs.length > 0 ? (
+                  filteredPrs.map((pr, index) => (
                     <motion.div
                       key={pr.id}
                       initial={{ opacity: 0, x: -20 }}
@@ -266,7 +305,11 @@ export default function App() {
                 ) : !loading && (
                   <div className="text-center py-20 bg-[#161b22] border border-dashed border-[#30363d] rounded-2xl">
                     <GitPullRequest className="w-12 h-12 text-[#30363d] mx-auto mb-4" />
-                    <p className="text-[#8b949e]">Nenhum Pull Request aberto encontrado.</p>
+                    <p className="text-[#8b949e]">
+                      {prs.length > 0
+                        ? "Nenhum Pull Request corresponde aos filtros atuais."
+                        : "Nenhum Pull Request aberto encontrado."}
+                    </p>
                   </div>
                 )}
               </AnimatePresence>
