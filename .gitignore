@@ -6,3 +6,8 @@ coverage/
 *.log
 .env*
 !.env.example
+.github-token.local.txt
+netlify/functions/lib/.github-token.local.txt
+
+# Local Netlify folder
+.netlify

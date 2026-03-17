@@ -5,6 +5,10 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
+interface SearchIssuesResponse<TItem> {
+  items?: TItem[];
+}
+
 async function startServer() {
   const app = express();
   const PORT = Number(process.env.PORT || 3000);
@@ -16,6 +20,36 @@ async function startServer() {
     Accept: "application/vnd.github+json",
     "X-GitHub-Api-Version": "2022-11-28",
   });
+
+  const fetchAllSearchIssues = async <TItem,>(query: string) => {
+    const items: TItem[] = [];
+    const perPage = 100;
+
+    for (let page = 1; page <= 10; page += 1) {
+      const response = await axios.get<SearchIssuesResponse<TItem>>(
+        "https://api.github.com/search/issues",
+        {
+          headers: getGithubHeaders(),
+          params: {
+            q: query,
+            sort: "created",
+            order: "desc",
+            per_page: perPage,
+            page,
+          },
+        }
+      );
+
+      const pageItems = Array.isArray(response.data?.items) ? response.data.items : [];
+      items.push(...pageItems);
+
+      if (pageItems.length < perPage) {
+        break;
+      }
+    }
+
+    return items;
+  };
 
   app.use(express.json());
 
@@ -51,16 +85,8 @@ async function startServer() {
     }
 
     try {
-      // Search for open PRs created by the authenticated user
-      // q=is:open+is:pr+author:@me+archived:false
-      const response = await axios.get(
-        "https://api.github.com/search/issues?q=is:open+is:pr+author:@me&sort=created&order=desc",
-        {
-          headers: getGithubHeaders(),
-        }
-      );
-
-      res.json(response.data.items);
+      const items = await fetchAllSearchIssues("is:open is:pr author:@me");
+      res.json(items);
     } catch (error) {
       console.error("PR Fetch Error:", error);
       res.status(500).json({ error: "Failed to fetch PRs" });

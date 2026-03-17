@@ -23,6 +23,7 @@ interface UserData {
 }
 
 export default function App() {
+  const itemsPerPage = 10;
   const [user, setUser] = useState<UserData | null>(null);
   const [prs, setPrs] = useState<PR[]>([]);
   const [loading, setLoading] = useState(true);
@@ -31,6 +32,7 @@ export default function App() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedRepo, setSelectedRepo] = useState("all");
   const [selectedLabel, setSelectedLabel] = useState("all");
+  const [currentPage, setCurrentPage] = useState(1);
 
   const fetchUserData = async () => {
     try {
@@ -85,6 +87,10 @@ export default function App() {
     return url.split("/").slice(-1)[0];
   };
 
+  const getRepoOwner = (url: string) => {
+    return url.split("/").slice(-2, -1)[0];
+  };
+
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return new Intl.DateTimeFormat("pt-BR", {
@@ -116,6 +122,23 @@ export default function App() {
 
     return matchesSearch && matchesRepo && matchesLabel;
   });
+
+  const totalPages = Math.max(1, Math.ceil(filteredPrs.length / itemsPerPage));
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+  const paginatedPrs = filteredPrs.slice(
+    (safeCurrentPage - 1) * itemsPerPage,
+    safeCurrentPage * itemsPerPage
+  );
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, selectedRepo, selectedLabel]);
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
 
   if (loading && !user) {
     return (
@@ -244,8 +267,29 @@ export default function App() {
 
             <div className="grid gap-4">
               <AnimatePresence mode="popLayout">
-                {filteredPrs.length > 0 ? (
-                  filteredPrs.map((pr, index) => (
+                {loading ? (
+                  <motion.div
+                    key="loading-state"
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -12 }}
+                    className="rounded-2xl border border-[#30363d] bg-[#161b22] p-10"
+                  >
+                    <div className="flex flex-col items-center justify-center gap-4 text-center">
+                      <div className="relative">
+                        <div className="h-14 w-14 animate-spin rounded-full border-2 border-[#30363d] border-t-blue-500"></div>
+                        <Github className="absolute inset-0 m-auto h-5 w-5 text-blue-400" />
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-lg font-semibold text-white">Buscando dados no GitHub</p>
+                        <p className="text-sm text-[#8b949e]">
+                          Carregando seus Pull Requests e metadados mais recentes.
+                        </p>
+                      </div>
+                    </div>
+                  </motion.div>
+                ) : filteredPrs.length > 0 ? (
+                  paginatedPrs.map((pr, index) => (
                     <motion.div
                       key={pr.id}
                       initial={{ opacity: 0, x: -20 }}
@@ -253,6 +297,11 @@ export default function App() {
                       transition={{ delay: index * 0.05 }}
                       className="group bg-[#161b22] border border-[#30363d] rounded-xl overflow-hidden hover:border-[#8b949e]/50 transition-all hover:shadow-2xl hover:shadow-black/40"
                     >
+                      {(() => {
+                        const repoName = getRepoName(pr.repository_url);
+                        const repoOwner = getRepoOwner(pr.repository_url);
+
+                        return (
                       <a 
                         href={pr.html_url} 
                         target="_blank" 
@@ -265,7 +314,9 @@ export default function App() {
 
                         <div className="flex-1 min-w-0 space-y-2">
                           <div className="flex items-center gap-2 text-xs font-mono text-[#8b949e]">
-                            <span className="hover:text-blue-400 transition-colors">{getRepoName(pr.repository_url)}</span>
+                            <span className="hover:text-blue-400 transition-colors">
+                              {repoOwner}/{repoName}
+                            </span>
                             <span>•</span>
                             <span className="flex items-center gap-1">
                               <Clock className="w-3 h-3" />
@@ -300,9 +351,11 @@ export default function App() {
                           <ChevronRight className="w-5 h-5 text-[#30363d] group-hover:text-white transition-colors" />
                         </div>
                       </a>
+                        );
+                      })()}
                     </motion.div>
                   ))
-                ) : !loading && (
+                ) : (
                   <div className="text-center py-20 bg-[#161b22] border border-dashed border-[#30363d] rounded-2xl">
                     <GitPullRequest className="w-12 h-12 text-[#30363d] mx-auto mb-4" />
                     <p className="text-[#8b949e]">
@@ -314,6 +367,39 @@ export default function App() {
                 )}
               </AnimatePresence>
             </div>
+
+            {filteredPrs.length > itemsPerPage ? (
+              <div className="flex flex-col gap-4 rounded-2xl border border-[#30363d] bg-[#161b22] p-4 sm:flex-row sm:items-center sm:justify-between">
+                <p className="text-sm text-[#8b949e]">
+                  Mostrando {Math.min((safeCurrentPage - 1) * itemsPerPage + 1, filteredPrs.length)}-
+                  {Math.min(safeCurrentPage * itemsPerPage, filteredPrs.length)} de {filteredPrs.length} PRs
+                </p>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+                    disabled={safeCurrentPage === 1}
+                    className="rounded-xl border border-[#30363d] px-4 py-2 text-sm font-medium text-white transition disabled:cursor-not-allowed disabled:opacity-40 hover:border-blue-500 hover:text-blue-400"
+                  >
+                    Anterior
+                  </button>
+
+                  <span className="min-w-24 text-center text-sm text-[#8b949e]">
+                    Página {safeCurrentPage} de {totalPages}
+                  </span>
+
+                  <button
+                    type="button"
+                    onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
+                    disabled={safeCurrentPage === totalPages}
+                    className="rounded-xl border border-[#30363d] px-4 py-2 text-sm font-medium text-white transition disabled:cursor-not-allowed disabled:opacity-40 hover:border-blue-500 hover:text-blue-400"
+                  >
+                    Próxima
+                  </button>
+                </div>
+              </div>
+            ) : null}
           </div>
         )}
       </main>
