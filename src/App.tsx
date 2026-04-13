@@ -1,7 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { Routes, Route, NavLink } from "react-router-dom";
-import { Github, GitPullRequest, Clock, ChevronRight, AlertCircle, KeyRound, Home, GitCommit } from "lucide-react";
+import { Github, GitPullRequest, Clock, ChevronRight, AlertCircle, KeyRound, Home, GitCommit, RefreshCw } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
+import Select, { StylesConfig } from "react-select";
 import Commits from "./Commits";
 
 interface PR {
@@ -35,8 +36,9 @@ export default function App() {
   const [selectedRepo, setSelectedRepo] = useState("all");
   const [selectedLabel, setSelectedLabel] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
+  const [refreshing, setRefreshing] = useState(false);
 
-  const fetchUserData = async () => {
+  const fetchUserData = useCallback(async () => {
     try {
       setError(null);
       const response = await fetch("/api/user");
@@ -61,10 +63,14 @@ export default function App() {
       setError("Erro de conexão ao buscar dados do GitHub.");
       setLoading(false);
     }
-  };
+  }, []);
 
-  const fetchPRs = async () => {
-    setLoading(true);
+  const fetchPRs = async (isRefresh = false) => {
+    if (isRefresh) {
+      setRefreshing(true);
+    } else {
+      setLoading(true);
+    }
     try {
       const response = await fetch("/api/prs");
       if (response.ok) {
@@ -78,7 +84,12 @@ export default function App() {
       setError("Erro de conexão ao buscar PRs.");
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
+  };
+
+  const handleRefresh = async () => {
+    await fetchPRs(true);
   };
 
   useEffect(() => {
@@ -141,6 +152,78 @@ export default function App() {
       setCurrentPage(totalPages);
     }
   }, [currentPage, totalPages]);
+
+  const selectStyles: StylesConfig = {
+    control: (base) => ({
+      ...base,
+      backgroundColor: "#0d1117",
+      borderColor: "#30363d",
+      borderRadius: "0.75rem",
+      minHeight: "48px",
+      boxShadow: "none",
+      "&:hover": {
+        borderColor: "#3b82f6",
+      },
+    }),
+    menu: (base) => ({
+      ...base,
+      backgroundColor: "#161b22",
+      border: "1px solid #30363d",
+      borderRadius: "0.75rem",
+      overflow: "hidden",
+    }),
+    menuList: (base) => ({
+      ...base,
+      padding: "4px",
+    }),
+    option: (base, state) => ({
+      ...base,
+      backgroundColor: state.isSelected ? "#21262d" : state.isFocused ? "#1c2128" : "#161b22",
+      color: "#c9d1d9",
+      borderRadius: "0.5rem",
+      padding: "8px 12px",
+      "&:active": {
+        backgroundColor: "#21262d",
+      },
+    }),
+    singleValue: (base) => ({
+      ...base,
+      color: "#c9d1d9",
+    }),
+    placeholder: (base) => ({
+      ...base,
+      color: "#8b949e",
+    }),
+    input: (base) => ({
+      ...base,
+      color: "#c9d1d9",
+    }),
+    dropdownIndicator: (base) => ({
+      ...base,
+      color: "#8b949e",
+      "&:hover": {
+        color: "#c9d1d9",
+      },
+    }),
+    indicatorSeparator: (base) => ({
+      ...base,
+      backgroundColor: "#30363d",
+    }),
+    noOptionsMessage: (base) => ({
+      ...base,
+      color: "#8b949e",
+    }),
+  };
+
+  const repoOptions = useMemo(() => [
+    { value: "all", label: "Todos" },
+    ...repositories.map((repo) => ({ value: repo, label: repo }))
+  ], [repositories]);
+
+  const labelOptions = useMemo(() => [
+    { value: "all", label: "Todas" },
+    ...labels.map((label) => ({ value: label, label: label }))
+  ], [labels]);
 
   if (loading && !user) {
     return (
@@ -241,9 +324,20 @@ export default function App() {
                 <h2 className="text-3xl font-bold text-white tracking-tight">Seus Pull Requests</h2>
                 <p className="text-[#8b949e] mt-1">Listando PRs abertos por você, do mais recente ao mais antigo.</p>
               </div>
-              <div className="flex items-center gap-2 text-sm font-medium px-3 py-1 bg-blue-500/10 text-blue-400 rounded-full border border-blue-500/20">
-                <span className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></span>
-                {filteredPrs.length} de {prs.length} PRs
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleRefresh}
+                  disabled={refreshing}
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium text-[#8b949e] hover:text-white hover:bg-[#21262d] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <RefreshCw className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`} />
+                  <span className="hidden sm:inline">Atualizar</span>
+                </button>
+                <div className="flex items-center gap-2 text-sm font-medium px-3 py-1 bg-blue-500/10 text-blue-400 rounded-full border border-blue-500/20">
+                  <span className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></span>
+                  {filteredPrs.length} de {prs.length} PRs
+                </div>
               </div>
             </div>
 
@@ -261,34 +355,28 @@ export default function App() {
 
               <label className="space-y-2">
                 <span className="text-xs font-semibold uppercase tracking-[0.2em] text-[#8b949e]">Repositório</span>
-                <select
-                  value={selectedRepo}
-                  onChange={(event) => setSelectedRepo(event.target.value)}
-                  className="w-full rounded-xl border border-[#30363d] bg-[#0d1117] px-4 py-3 text-sm text-white outline-none transition focus:border-blue-500"
-                >
-                  <option value="all">Todos</option>
-                  {repositories.map((repository) => (
-                    <option key={repository} value={repository}>
-                      {repository}
-                    </option>
-                  ))}
-                </select>
+                <Select
+                  value={repoOptions.find(opt => opt.value === selectedRepo)}
+                  onChange={(option: { value: string; label: string } | null) => setSelectedRepo(option?.value || "all")}
+                  options={repoOptions}
+                  styles={selectStyles}
+                  isSearchable
+                  placeholder="Todos"
+                  noOptionsMessage={() => "Nenhum repositório"}
+                />
               </label>
 
               <label className="space-y-2">
                 <span className="text-xs font-semibold uppercase tracking-[0.2em] text-[#8b949e]">Label</span>
-                <select
-                  value={selectedLabel}
-                  onChange={(event) => setSelectedLabel(event.target.value)}
-                  className="w-full rounded-xl border border-[#30363d] bg-[#0d1117] px-4 py-3 text-sm text-white outline-none transition focus:border-blue-500"
-                >
-                  <option value="all">Todas</option>
-                  {labels.map((label) => (
-                    <option key={label} value={label}>
-                      {label}
-                    </option>
-                  ))}
-                </select>
+                <Select
+                  value={labelOptions.find(opt => opt.value === selectedLabel)}
+                  onChange={(option: { value: string; label: string } | null) => setSelectedLabel(option?.value || "all")}
+                  options={labelOptions}
+                  styles={selectStyles}
+                  isSearchable
+                  placeholder="Todas"
+                  noOptionsMessage={() => "Nenhuma label"}
+                />
               </label>
             </div>
 
