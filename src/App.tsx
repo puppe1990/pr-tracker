@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
-import { Github, GitPullRequest, Clock, ChevronRight, AlertCircle, KeyRound } from "lucide-react";
+import { Github, GitPullRequest, Clock, ChevronRight, AlertCircle, KeyRound, Home, GitCommit } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
+import Commits from "./Commits";
 
 interface PR {
   id: number;
@@ -24,6 +25,7 @@ interface UserData {
 
 export default function App() {
   const itemsPerPage = 10;
+  const [activeTab, setActiveTab] = useState<"prs" | "commits">("prs");
   const [user, setUser] = useState<UserData | null>(null);
   const [prs, setPrs] = useState<PR[]>([]);
   const [loading, setLoading] = useState(true);
@@ -154,11 +156,40 @@ export default function App() {
       <header className="border-b border-[#30363d] bg-[#161b22]/80 backdrop-blur-md sticky top-0 z-50">
         <div className="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="bg-[#21262d] p-2 rounded-lg border border-[#30363d]">
-              <Github className="w-6 h-6 text-white" />
-            </div>
-            <h1 className="text-lg font-semibold text-white tracking-tight">PR Tracker</h1>
+            <a href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
+              <div className="bg-[#21262d] p-2 rounded-lg border border-[#30363d]">
+                <Home className="w-6 h-6 text-white" />
+              </div>
+              <h1 className="text-lg font-semibold text-white tracking-tight">PR Tracker</h1>
+            </a>
           </div>
+
+          <nav className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setActiveTab("prs")}
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                activeTab === "prs"
+                  ? "text-white bg-[#21262d]"
+                  : "text-[#8b949e] hover:text-white hover:bg-[#21262d]"
+              }`}
+            >
+              <GitPullRequest className="w-4 h-4" />
+              <span className="hidden sm:inline">PRs</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab("commits")}
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                activeTab === "commits"
+                  ? "text-white bg-[#21262d]"
+                  : "text-[#8b949e] hover:text-white hover:bg-[#21262d]"
+              }`}
+            >
+              <GitCommit className="w-4 h-4" />
+              <span className="hidden sm:inline">Commits</span>
+            </button>
+          </nav>
 
           {user ? (
             <div className="flex items-center gap-4">
@@ -172,7 +203,10 @@ export default function App() {
       </header>
 
       <main className="max-w-5xl mx-auto px-4 py-12">
-        {!user ? (
+        {activeTab === "commits" ? (
+          <Commits />
+        ) : (
+          !user ? (
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -401,6 +435,7 @@ export default function App() {
               </div>
             ) : null}
           </div>
+        )
         )}
       </main>
 
