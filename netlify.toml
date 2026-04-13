@@ -17,6 +17,16 @@
   status = 200
 
 [[redirects]]
+  from = "/api/repos"
+  to = "/.netlify/functions/repos"
+  status = 200
+
+[[redirects]]
+  from = "/api/commits"
+  to = "/.netlify/functions/commits"
+  status = 200
+
+[[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200

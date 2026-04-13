@@ -24,10 +24,33 @@ export const githubApi = axios.create({
   baseURL: "https://api.github.com",
 });
 
-export const githubRequest = <T,>(url: string, token: string) =>
+export const githubRequest = <T,>(
+  url: string,
+  token: string,
+  params?: Record<string, string | number | boolean | undefined>
+) =>
   githubApi.get<T>(url, {
     headers: getGithubHeaders(token),
+    params,
   });
+
+export const parseLinkHeader = (header: string | null | undefined) => {
+  if (!header) {
+    return {} as Record<string, string>;
+  }
+
+  return header.split(",").reduce<Record<string, string>>((links, part) => {
+    const section = part.split(";");
+    const url = section[0]?.trim().replace(/^<|>$/g, "");
+    const rel = section[1]?.match(/rel="(.+)"/)?.[1];
+
+    if (url && rel) {
+      links[rel] = url;
+    }
+
+    return links;
+  }, {});
+};
 
 interface SearchIssuesResponse<TItem> {
   items?: TItem[];
