@@ -34,9 +34,21 @@ interface PaginationInfo {
   has_prev: boolean;
 }
 
+interface RepoData {
+  full_name: string;
+  name: string;
+  owner: {
+    login: string;
+    avatar_url: string;
+  };
+  description: string | null;
+  updated_at: string;
+}
+
 interface CommitsResponse {
   commits: CommitData[];
   pagination: PaginationInfo;
+  repos?: RepoData[];
 }
 
 export async function createApp() {
@@ -140,6 +152,28 @@ export async function createApp() {
     }
   });
 
+  app.get("/api/repos", async (_req, res) => {
+    if (!githubToken) {
+      return res.status(503).json({
+        error: "GitHub token not configured",
+        missingEnv: "GITHUB_PERSONAL_ACCESS_TOKEN",
+      });
+    }
+
+    try {
+      const response = await axios.get<RepoData[]>(
+        "https://api.github.com/user/repos?sort=updated&direction=desc&per_page=100",
+        {
+          headers: getGithubHeaders(),
+        }
+      );
+      res.json(response.data);
+    } catch (error) {
+      console.error("Repos Fetch Error:", error);
+      res.status(500).json({ error: "Failed to fetch repositories" });
+    }
+  });
+
   app.get("/api/commits", async (req, res) => {
     if (!githubToken) {
       return res.status(503).json({
@@ -150,44 +184,108 @@ export async function createApp() {
 
     const { repo, page = "1", per_page = "20" } = req.query;
 
-    if (!repo || typeof repo !== "string") {
-      return res.status(400).json({
-        error: "Repository parameter is required. Format: owner/repo",
-      });
-    }
-
     const pageNum = Math.max(1, parseInt(page as string, 10) || 1);
     const perPageNum = Math.min(100, Math.max(1, parseInt(per_page as string, 10) || 20));
 
     try {
-      const response = await axios.get<CommitData[]>(
-        `https://api.github.com/repos/${repo}/commits`,
-        {
-          headers: getGithubHeaders(),
-          params: {
-            per_page: perPageNum,
+      // If repo is specified, fetch commits from that repo only
+      if (repo && typeof repo === "string") {
+        const response = await axios.get<CommitData[]>(
+          `https://api.github.com/repos/${repo}/commits`,
+          {
+            headers: getGithubHeaders(),
+            params: {
+              per_page: perPageNum,
+              page: pageNum,
+            },
+          }
+        );
+
+        const linkHeader = response.headers["link"] as string | undefined;
+        const links = parseLinkHeader(linkHeader);
+
+        const hasNext = Boolean(links.next);
+        const hasPrev = Boolean(links.prev);
+
+        const commitsResponse: CommitsResponse = {
+          commits: response.data,
+          pagination: {
             page: pageNum,
+            per_page: perPageNum,
+            has_next: hasNext,
+            has_prev: hasPrev,
           },
+        };
+
+        res.json(commitsResponse);
+      } else {
+        // Fetch commits from all user repositories
+        // First, get user repos
+        const reposResponse = await axios.get<RepoData[]>(
+          "https://api.github.com/user/repos?sort=updated&direction=desc&per_page=50",
+          {
+            headers: getGithubHeaders(),
+          }
+        );
+
+        const repos = reposResponse.data;
+        const allCommits: CommitData[] = [];
+
+        // Fetch commits from each repo (limited to avoid rate limits)
+        const reposToCheck = repos.slice(0, 10); // Check last 10 updated repos
+
+        for (const repoData of reposToCheck) {
+          try {
+            const commitsResponse = await axios.get<CommitData[]>(
+              `https://api.github.com/repos/${repoData.full_name}/commits`,
+              {
+                headers: getGithubHeaders(),
+                params: {
+                  per_page: perPageNum,
+                  page: pageNum,
+                },
+              }
+            );
+            
+            // Add repo info to each commit
+            const commitsWithRepo = commitsResponse.data.map((commit) => ({
+              ...commit,
+              repo: repoData.full_name,
+            }));
+            
+            allCommits.push(...commitsWithRepo);
+          } catch (error) {
+            // Skip repos with errors (e.g., no access)
+            console.warn(`Failed to fetch commits from ${repoData.full_name}`);
+          }
         }
-      );
 
-      const linkHeader = response.headers["link"] as string | undefined;
-      const links = parseLinkHeader(linkHeader);
-      
-      const hasNext = Boolean(links.next);
-      const hasPrev = Boolean(links.prev);
+        // Sort by date (newest first)
+        allCommits.sort((a, b) => {
+          return new Date(b.commit.author.date).getTime() - new Date(a.commit.author.date).getTime();
+        });
 
-      const commitsResponse: CommitsResponse = {
-        commits: response.data,
-        pagination: {
-          page: pageNum,
-          per_page: perPageNum,
-          has_next: hasNext,
-          has_prev: hasPrev,
-        },
-      };
+        // Paginate results
+        const startIndex = 0;
+        const endIndex = perPageNum;
+        const paginatedCommits = allCommits.slice(startIndex, endIndex);
 
-      res.json(commitsResponse);
+        const hasNext = allCommits.length > perPageNum;
+        const hasPrev = pageNum > 1;
+
+        const response: CommitsResponse = {
+          commits: paginatedCommits,
+          pagination: {
+            page: pageNum,
+            per_page: perPageNum,
+            has_next: hasNext,
+            has_prev: hasPrev,
+          },
+          repos: repos,
+        };
+
+        res.json(response);
+      }
     } catch (error) {
       console.error("Commits Fetch Error:", error);
       res.status(500).json({ error: "Failed to fetch commits" });

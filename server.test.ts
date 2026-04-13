@@ -31,13 +31,45 @@ describe("GET /api/commits", () => {
     process.env.GITHUB_PERSONAL_ACCESS_TOKEN = originalToken;
   });
 
-  it("should return 400 when repo parameter is missing", async () => {
+  it("should return commits from all repos when repo parameter is missing", async () => {
+    const mockRepos = [
+      {
+        full_name: "test/repo1",
+        name: "repo1",
+        owner: { login: "test", avatar_url: "https://example.com/avatar.png" },
+        description: "Test repo",
+        updated_at: "2024-01-01T00:00:00Z",
+      },
+    ];
+
+    const mockCommits = [
+      {
+        sha: "abc123",
+        commit: {
+          message: "Fix bug",
+          author: {
+            name: "Test User",
+            email: "test@example.com",
+            date: "2024-01-01T00:00:00Z",
+          },
+        },
+        html_url: "https://github.com/test/repo/commit/abc123",
+      },
+    ];
+
+    // Mock repos API call
+    (axios.get as ReturnType<typeof vi.fn>)
+      .mockResolvedValueOnce({ data: mockRepos })
+      // Mock commits API call
+      .mockResolvedValueOnce({ data: mockCommits, headers: {} });
+
     const app = await createApp();
     const response = await request(app).get("/api/commits");
 
-    expect(response.status).toBe(400);
-    expect(response.body).toHaveProperty("error");
-    expect(response.body.error).toContain("Repository parameter is required");
+    expect(response.status).toBe(200);
+    expect(response.body).toHaveProperty("commits");
+    expect(response.body).toHaveProperty("repos");
+    expect(response.body.commits).toHaveLength(1);
   });
 
   it("should return commits with pagination metadata", async () => {

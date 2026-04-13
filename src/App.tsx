@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Routes, Route, NavLink } from "react-router-dom";
 import { Github, GitPullRequest, Clock, ChevronRight, AlertCircle, KeyRound, Home, GitCommit } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import Commits from "./Commits";
@@ -25,7 +26,6 @@ interface UserData {
 
 export default function App() {
   const itemsPerPage = 10;
-  const [activeTab, setActiveTab] = useState<"prs" | "commits">("prs");
   const [user, setUser] = useState<UserData | null>(null);
   const [prs, setPrs] = useState<PR[]>([]);
   const [loading, setLoading] = useState(true);
@@ -165,30 +165,32 @@ export default function App() {
           </div>
 
           <nav className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setActiveTab("prs")}
-              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                activeTab === "prs"
-                  ? "text-white bg-[#21262d]"
-                  : "text-[#8b949e] hover:text-white hover:bg-[#21262d]"
-              }`}
+            <NavLink
+              to="/"
+              className={({ isActive }) =>
+                `flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  isActive
+                    ? "text-white bg-[#21262d]"
+                    : "text-[#8b949e] hover:text-white hover:bg-[#21262d]"
+                }`
+              }
             >
               <GitPullRequest className="w-4 h-4" />
               <span className="hidden sm:inline">PRs</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab("commits")}
-              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                activeTab === "commits"
-                  ? "text-white bg-[#21262d]"
-                  : "text-[#8b949e] hover:text-white hover:bg-[#21262d]"
-              }`}
+            </NavLink>
+            <NavLink
+              to="/commits"
+              className={({ isActive }) =>
+                `flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  isActive
+                    ? "text-white bg-[#21262d]"
+                    : "text-[#8b949e] hover:text-white hover:bg-[#21262d]"
+                }`
+              }
             >
               <GitCommit className="w-4 h-4" />
               <span className="hidden sm:inline">Commits</span>
-            </button>
+            </NavLink>
           </nav>
 
           {user ? (
@@ -203,10 +205,8 @@ export default function App() {
       </header>
 
       <main className="max-w-5xl mx-auto px-4 py-12">
-        {activeTab === "commits" ? (
-          <Commits />
-        ) : (
-          !user ? (
+        <Routes>
+          <Route path="/" element={!user ? (
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -435,8 +435,9 @@ export default function App() {
               </div>
             ) : null}
           </div>
-        )
-        )}
+        )} />
+          <Route path="/commits" element={<Commits />} />
+        </Routes>
       </main>
 
       {/* Footer */}

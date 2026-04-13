@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { GitCommit, Clock, ChevronRight, AlertCircle, ArrowLeft } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 
@@ -17,6 +18,18 @@ interface Commit {
     login: string;
     avatar_url: string;
   };
+  repo?: string;
+}
+
+interface Repo {
+  full_name: string;
+  name: string;
+  owner: {
+    login: string;
+    avatar_url: string;
+  };
+  description: string | null;
+  updated_at: string;
 }
 
 interface Pagination {
@@ -29,13 +42,15 @@ interface Pagination {
 interface CommitsResponse {
   commits: Commit[];
   pagination: Pagination;
+  repos?: Repo[];
 }
 
 export default function Commits() {
   const [commits, setCommits] = useState<Commit[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [repo, setRepo] = useState("matheuspuppe/pr-tracker");
+  const [selectedRepo, setSelectedRepo] = useState<string>("all");
+  const [repos, setRepos] = useState<Repo[]>([]);
   const [pagination, setPagination] = useState<Pagination>({
     page: 1,
     per_page: 20,
@@ -48,14 +63,26 @@ export default function Commits() {
     setError(null);
 
     try {
-      const response = await fetch(
-        `/api/commits?repo=${encodeURIComponent(repo)}&page=${pageNum}&per_page=${pagination.per_page}`
-      );
+      const params = new URLSearchParams({
+        page: pageNum.toString(),
+        per_page: pagination.per_page.toString(),
+      });
+
+      if (selectedRepo !== "all") {
+        params.append("repo", selectedRepo);
+      }
+
+      const response = await fetch(`/api/commits?${params.toString()}`);
 
       if (response.ok) {
         const data: CommitsResponse = await response.json();
         setCommits(data.commits);
         setPagination(data.pagination);
+        
+        // Store repos if returned from API
+        if (data.repos) {
+          setRepos(data.repos);
+        }
       } else {
         const errorData = await response.json().catch(() => null);
         setError(errorData?.error || "Failed to fetch commits");
@@ -68,9 +95,25 @@ export default function Commits() {
     }
   };
 
+  const fetchRepos = async () => {
+    try {
+      const response = await fetch("/api/repos");
+      if (response.ok) {
+        const data: Repo[] = await response.json();
+        setRepos(data);
+      }
+    } catch (err) {
+      console.error("Repos Fetch Error:", err);
+    }
+  };
+
   useEffect(() => {
     fetchCommits(1);
-  }, [repo]);
+  }, [selectedRepo]);
+
+  useEffect(() => {
+    fetchRepos();
+  }, []);
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -98,34 +141,39 @@ export default function Commits() {
   return (
     <div className="space-y-8">
       <div className="flex items-center gap-4">
-        <a
-          href="/"
+        <Link
+          to="/"
           className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-[#8b949e] hover:text-white hover:bg-[#21262d] transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
           <span>Back to PRs</span>
-        </a>
+        </Link>
       </div>
 
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
           <h2 className="text-3xl font-bold text-white tracking-tight">Commits</h2>
-          <p className="text-[#8b949e] mt-1">Browse repository commits with pagination.</p>
+          <p className="text-[#8b949e] mt-1">Browse commits from all your repositories.</p>
         </div>
       </div>
 
       <div className="rounded-2xl border border-[#30363d] bg-[#161b22] p-4">
         <label className="space-y-2 block">
           <span className="text-xs font-semibold uppercase tracking-[0.2em] text-[#8b949e]">
-            Repository
+            Filter by Repository
           </span>
-          <input
-            type="text"
-            value={repo}
-            onChange={(e) => setRepo(e.target.value)}
-            placeholder="owner/repo"
+          <select
+            value={selectedRepo}
+            onChange={(e) => setSelectedRepo(e.target.value)}
             className="w-full rounded-xl border border-[#30363d] bg-[#0d1117] px-4 py-3 text-sm text-white outline-none transition focus:border-blue-500"
-          />
+          >
+            <option value="all">All Repositories</option>
+            {repos.map((repo) => (
+              <option key={repo.full_name} value={repo.full_name}>
+                {repo.full_name}
+              </option>
+            ))}
+          </select>
         </label>
       </div>
 
@@ -180,6 +228,14 @@ export default function Commits() {
 
                   <div className="flex-1 min-w-0 space-y-2">
                     <div className="flex items-center gap-2 text-xs font-mono text-[#8b949e]">
+                      {commit.repo && (
+                        <>
+                          <span className="text-blue-400 hover:text-blue-300 transition-colors">
+                            {commit.repo}
+                          </span>
+                          <span>•</span>
+                        </>
+                      )}
                       <code className="px-2 py-0.5 bg-[#0d1117] rounded">
                         {commit.sha.substring(0, 7)}
                       </code>
