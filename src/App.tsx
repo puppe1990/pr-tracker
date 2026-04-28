@@ -4,6 +4,7 @@ import { Github, GitPullRequest, Clock, ChevronRight, AlertCircle, KeyRound, Hom
 import { motion, AnimatePresence } from "motion/react";
 import Select, { StylesConfig } from "react-select";
 import Commits from "./Commits";
+import RecentRepos from "./RecentRepos";
 
 interface PR {
   id: number;
@@ -274,6 +275,19 @@ export default function App() {
               <GitCommit className="w-4 h-4" />
               <span className="hidden sm:inline">Commits</span>
             </NavLink>
+            <NavLink
+              to="/repos-recentes"
+              className={({ isActive }) =>
+                `flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  isActive
+                    ? "text-white bg-[#21262d]"
+                    : "text-[#8b949e] hover:text-white hover:bg-[#21262d]"
+                }`
+              }
+            >
+              <Clock className="w-4 h-4" />
+              <span className="hidden sm:inline">Repos recentes</span>
+            </NavLink>
           </nav>
 
           {user ? (
@@ -525,6 +539,7 @@ export default function App() {
           </div>
         )} />
           <Route path="/commits" element={<Commits />} />
+          <Route path="/repos-recentes" element={<RecentRepos />} />
         </Routes>
       </main>
 
