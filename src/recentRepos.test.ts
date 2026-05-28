@@ -30,7 +30,7 @@ const repos: RecentRepo[] = [
 
 describe("getVisibleRecentRepos", () => {
   it("orders repos by most recent update", () => {
-    const result = getVisibleRecentRepos(repos, "", 1, 2);
+    const result = getVisibleRecentRepos(repos, "", "all", 1, 2);
 
     expect(result.total).toBe(3);
     expect(result.totalPages).toBe(2);
@@ -38,15 +38,23 @@ describe("getVisibleRecentRepos", () => {
   });
 
   it("filters repos by search term", () => {
-    const result = getVisibleRecentRepos(repos, "zeb", 1, 10);
+    const result = getVisibleRecentRepos(repos, "zeb", "all", 1, 10);
 
     expect(result.total).toBe(1);
     expect(result.totalPages).toBe(1);
     expect(result.items.map((repo) => repo.name)).toEqual(["zebra"]);
   });
 
+  it("filters repos by selected repository", () => {
+    const result = getVisibleRecentRepos(repos, "", "org/bravo", 1, 10);
+
+    expect(result.total).toBe(1);
+    expect(result.totalPages).toBe(1);
+    expect(result.items.map((repo) => repo.name)).toEqual(["bravo"]);
+  });
+
   it("returns the requested page", () => {
-    const result = getVisibleRecentRepos(repos, "", 2, 2);
+    const result = getVisibleRecentRepos(repos, "", "all", 2, 2);
 
     expect(result.page).toBe(2);
     expect(result.items.map((repo) => repo.name)).toEqual(["zebra"]);

@@ -3,24 +3,7 @@ import { Link } from "react-router-dom";
 import { GitCommit, Clock, ChevronRight, AlertCircle, ArrowLeft, RefreshCw } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import Select, { StylesConfig } from "react-select";
-
-interface Commit {
-  sha: string;
-  commit: {
-    message: string;
-    author: {
-      name: string;
-      email: string;
-      date: string;
-    };
-  };
-  html_url: string;
-  author?: {
-    login: string;
-    avatar_url: string;
-  };
-  repo?: string;
-}
+import { getVisibleCommits, type Commit } from "./commits-list";
 
 interface Repo {
   full_name: string;
@@ -52,6 +35,7 @@ export default function Commits() {
   const [error, setError] = useState<string | null>(null);
   const [selectedRepo, setSelectedRepo] = useState<string>("all");
   const [repos, setRepos] = useState<Repo[]>([]);
+  const [searchTerm, setSearchTerm] = useState("");
   const [pagination, setPagination] = useState<Pagination>({
     page: 1,
     per_page: 20,
@@ -216,6 +200,11 @@ export default function Commits() {
     ...repos.map((repo) => ({ value: repo.full_name, label: repo.full_name }))
   ], [repos]);
 
+  const visibleCommits = useMemo(
+    () => getVisibleCommits(commits, searchTerm, selectedRepo, pagination.page, pagination.per_page),
+    [commits, pagination.page, pagination.per_page, searchTerm, selectedRepo]
+  );
+
   return (
     <div className="space-y-8">
       <div className="flex items-center gap-4">
@@ -233,30 +222,47 @@ export default function Commits() {
           <h2 className="text-3xl font-bold text-white tracking-tight">Commits</h2>
           <p className="text-[#8b949e] mt-1">Browse commits from all your repositories.</p>
         </div>
-        <button
-          type="button"
-          onClick={handleRefresh}
-          disabled={refreshing}
-          className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium text-[#8b949e] hover:text-white hover:bg-[#21262d] transition-colors self-end disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          <RefreshCw className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`} />
-          <span className="hidden sm:inline">Refresh</span>
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={handleRefresh}
+            disabled={refreshing}
+            className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium text-[#8b949e] hover:text-white hover:bg-[#21262d] transition-colors self-end disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <RefreshCw className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`} />
+            <span className="hidden sm:inline">Refresh</span>
+          </button>
+          <div className="flex items-center gap-2 text-sm font-medium px-3 py-1 bg-blue-500/10 text-blue-400 rounded-full border border-blue-500/20">
+            <span className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></span>
+            {visibleCommits.total} de {commits.length} commits
+          </div>
+        </div>
       </div>
 
-      <div className="rounded-2xl border border-[#30363d] bg-[#161b22] p-4">
+      <div className="grid gap-3 rounded-2xl border border-[#30363d] bg-[#161b22] p-4 sm:grid-cols-2">
+        <label className="space-y-2">
+          <span className="text-xs font-semibold uppercase tracking-[0.2em] text-[#8b949e]">Buscar</span>
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={(event) => setSearchTerm(event.target.value)}
+            placeholder="Mensagem, SHA ou autor"
+            className="w-full rounded-xl border border-[#30363d] bg-[#0d1117] px-4 py-3 text-sm text-white outline-none transition focus:border-blue-500"
+          />
+        </label>
+
         <label className="space-y-2 block">
           <span className="text-xs font-semibold uppercase tracking-[0.2em] text-[#8b949e]">
-            Filter by Repository
+            Repositório
           </span>
           <Select
-            value={repoOptions.find(opt => opt.value === selectedRepo)}
+            value={repoOptions.find((opt) => opt.value === selectedRepo)}
             onChange={(option: { value: string; label: string } | null) => setSelectedRepo(option?.value || "all")}
             options={repoOptions}
             styles={selectStyles}
             isSearchable
-            placeholder="All Repositories"
-            noOptionsMessage={() => "No repositories"}
+            placeholder="Todos"
+            noOptionsMessage={() => "Nenhum repositório"}
           />
         </label>
       </div>
@@ -291,8 +297,8 @@ export default function Commits() {
                 </div>
               </div>
             </motion.div>
-          ) : commits.length > 0 ? (
-            commits.map((commit, index) => (
+          ) : visibleCommits.total > 0 ? (
+            visibleCommits.items.map((commit, index) => (
               <motion.div
                 key={commit.sha}
                 initial={{ opacity: 0, x: -20 }}
@@ -344,7 +350,9 @@ export default function Commits() {
           ) : (
             <div className="text-center py-20 bg-[#161b22] border border-dashed border-[#30363d] rounded-2xl">
               <GitCommit className="w-12 h-12 text-[#30363d] mx-auto mb-4" />
-              <p className="text-[#8b949e]">No commits found.</p>
+              <p className="text-[#8b949e]">
+                {commits.length > 0 ? "No commits match the current filters." : "No commits found."}
+              </p>
             </div>
           )}
         </AnimatePresence>

@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowLeft, AlertCircle, ChevronRight, Clock, FolderGit2, RefreshCw } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
+import Select, { StylesConfig } from "react-select";
 import { getVisibleRecentRepos, type RecentRepo } from "./recent-repos";
 
 export default function RecentRepos() {
@@ -11,6 +12,7 @@ export default function RecentRepos() {
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedRepo, setSelectedRepo] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
 
   const fetchRepos = async (isRefresh = false) => {
@@ -47,7 +49,7 @@ export default function RecentRepos() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm]);
+  }, [searchTerm, selectedRepo]);
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -60,9 +62,80 @@ export default function RecentRepos() {
     }).format(date);
   };
 
+  const selectStyles: StylesConfig = {
+    control: (base) => ({
+      ...base,
+      backgroundColor: "#0d1117",
+      borderColor: "#30363d",
+      borderRadius: "0.75rem",
+      minHeight: "48px",
+      boxShadow: "none",
+      "&:hover": {
+        borderColor: "#3b82f6",
+      },
+    }),
+    menu: (base) => ({
+      ...base,
+      backgroundColor: "#161b22",
+      border: "1px solid #30363d",
+      borderRadius: "0.75rem",
+      overflow: "hidden",
+    }),
+    menuList: (base) => ({
+      ...base,
+      padding: "4px",
+    }),
+    option: (base, state) => ({
+      ...base,
+      backgroundColor: state.isSelected ? "#21262d" : state.isFocused ? "#1c2128" : "#161b22",
+      color: "#c9d1d9",
+      borderRadius: "0.5rem",
+      padding: "8px 12px",
+      "&:active": {
+        backgroundColor: "#21262d",
+      },
+    }),
+    singleValue: (base) => ({
+      ...base,
+      color: "#c9d1d9",
+    }),
+    placeholder: (base) => ({
+      ...base,
+      color: "#8b949e",
+    }),
+    input: (base) => ({
+      ...base,
+      color: "#c9d1d9",
+    }),
+    dropdownIndicator: (base) => ({
+      ...base,
+      color: "#8b949e",
+      "&:hover": {
+        color: "#c9d1d9",
+      },
+    }),
+    indicatorSeparator: (base) => ({
+      ...base,
+      backgroundColor: "#30363d",
+    }),
+    noOptionsMessage: (base) => ({
+      ...base,
+      color: "#8b949e",
+    }),
+  };
+
+  const repoOptions = useMemo(
+    () => [
+      { value: "all", label: "Todos" },
+      ...repos.map((repo) => ({ value: repo.full_name, label: repo.full_name })),
+    ],
+    [repos]
+  );
+
   const { items: paginatedRepos, page: safeCurrentPage, total, totalPages } = getVisibleRecentRepos(
     repos,
     searchTerm,
+    selectedRepo,
     currentPage,
     itemsPerPage
   );
@@ -101,7 +174,7 @@ export default function RecentRepos() {
         </div>
       </div>
 
-      <div className="grid gap-3 rounded-2xl border border-[#30363d] bg-[#161b22] p-4">
+      <div className="grid gap-3 rounded-2xl border border-[#30363d] bg-[#161b22] p-4 sm:grid-cols-2">
         <label className="space-y-2">
           <span className="text-xs font-semibold uppercase tracking-[0.2em] text-[#8b949e]">Buscar</span>
           <input
@@ -110,6 +183,19 @@ export default function RecentRepos() {
             onChange={(event) => setSearchTerm(event.target.value)}
             placeholder="Nome, owner ou descrição"
             className="w-full rounded-xl border border-[#30363d] bg-[#0d1117] px-4 py-3 text-sm text-white outline-none transition focus:border-blue-500"
+          />
+        </label>
+
+        <label className="space-y-2">
+          <span className="text-xs font-semibold uppercase tracking-[0.2em] text-[#8b949e]">Repositório</span>
+          <Select
+            value={repoOptions.find((option) => option.value === selectedRepo)}
+            onChange={(option: { value: string; label: string } | null) => setSelectedRepo(option?.value || "all")}
+            options={repoOptions}
+            styles={selectStyles}
+            isSearchable
+            placeholder="Todos"
+            noOptionsMessage={() => "Nenhum repositório"}
           />
         </label>
       </div>
@@ -180,7 +266,11 @@ export default function RecentRepos() {
           ) : (
             <div className="text-center py-20 bg-[#161b22] border border-dashed border-[#30363d] rounded-2xl">
               <FolderGit2 className="w-12 h-12 text-[#30363d] mx-auto mb-4" />
-              <p className="text-[#8b949e]">Nenhum repositório recente encontrado.</p>
+              <p className="text-[#8b949e]">
+                {repos.length > 0
+                  ? "Nenhum repositório corresponde aos filtros atuais."
+                  : "Nenhum repositório recente encontrado."}
+              </p>
             </div>
           )}
         </AnimatePresence>

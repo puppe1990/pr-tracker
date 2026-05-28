@@ -20,6 +20,7 @@ interface VisibleRecentRepos {
 export function getVisibleRecentRepos(
   repos: RecentRepo[],
   searchTerm: string,
+  selectedRepo: string,
   currentPage: number,
   itemsPerPage: number
 ): VisibleRecentRepos {
@@ -32,6 +33,10 @@ export function getVisibleRecentRepos(
         new Date(secondRepo.updated_at).getTime() - new Date(firstRepo.updated_at).getTime()
     )
     .filter((repo) => {
+      if (selectedRepo !== "all" && repo.full_name !== selectedRepo) {
+        return false;
+      }
+
       if (normalizedSearch.length === 0) {
         return true;
       }
