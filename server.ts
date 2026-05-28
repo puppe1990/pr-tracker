@@ -2,6 +2,7 @@ import express from "express";
 import { createServer as createViteServer } from "vite";
 import axios from "axios";
 import dotenv from "dotenv";
+import { listenOnAvailablePort } from "./src/listen-on-available-port";
 
 dotenv.config();
 
@@ -297,12 +298,15 @@ export async function createApp() {
 
 async function startServer() {
   const app = await createApp();
-  const PORT = Number(process.env.PORT || 3000);
+  const startPort = Number(process.env.PORT || 3000);
 
   // Vite middleware for development
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
-      server: { middlewareMode: true },
+      server: {
+        middlewareMode: true,
+        hmr: { port: 0 },
+      },
       appType: "spa",
     });
     app.use(vite.middlewares);
@@ -313,18 +317,8 @@ async function startServer() {
     });
   }
 
-  const server = app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Server running on http://localhost:${PORT}`);
-  });
-
-  server.on("error", (error: NodeJS.ErrnoException) => {
-    if (error.code === "EADDRINUSE") {
-      console.error(`Port ${PORT} is already in use. Set a different PORT and try again.`);
-      process.exit(1);
-    }
-
-    throw error;
-  });
+  const { server, port } = await listenOnAvailablePort(app, startPort);
+  console.log(`Server running on http://localhost:${port}`);
 
   return { app, server };
 }
