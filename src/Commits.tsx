@@ -33,6 +33,7 @@ export default function Commits() {
   const [commits, setCommits] = useState<Commit[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedOrganization, setSelectedOrganization] = useState<string>("all");
   const [selectedRepo, setSelectedRepo] = useState<string>("all");
   const [repos, setRepos] = useState<Repo[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -105,6 +106,10 @@ export default function Commits() {
   useEffect(() => {
     fetchRepos();
   }, []);
+
+  useEffect(() => {
+    setSelectedRepo("all");
+  }, [selectedOrganization]);
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -195,14 +200,37 @@ export default function Commits() {
     }),
   };
 
-  const repoOptions = useMemo(() => [
-    { value: "all", label: "All Repositories" },
-    ...repos.map((repo) => ({ value: repo.full_name, label: repo.full_name }))
-  ], [repos]);
+  const organizationOptions = useMemo(
+    () => [
+      { value: "all", label: "Todas" },
+      ...Array.from(new Set(repos.map((repo) => repo.owner.login)))
+        .sort((firstOrg, secondOrg) => firstOrg.localeCompare(secondOrg))
+        .map((organization) => ({ value: organization, label: organization })),
+    ],
+    [repos]
+  );
+
+  const repoOptions = useMemo(
+    () => [
+      { value: "all", label: "Todos" },
+      ...repos
+        .filter((repo) => selectedOrganization === "all" || repo.owner.login === selectedOrganization)
+        .map((repo) => ({ value: repo.full_name, label: repo.full_name })),
+    ],
+    [repos, selectedOrganization]
+  );
 
   const visibleCommits = useMemo(
-    () => getVisibleCommits(commits, searchTerm, selectedRepo, pagination.page, pagination.per_page),
-    [commits, pagination.page, pagination.per_page, searchTerm, selectedRepo]
+    () =>
+      getVisibleCommits(
+        commits,
+        searchTerm,
+        selectedOrganization,
+        selectedRepo,
+        pagination.page,
+        pagination.per_page
+      ),
+    [commits, pagination.page, pagination.per_page, searchTerm, selectedOrganization, selectedRepo]
   );
 
   return (
@@ -239,7 +267,7 @@ export default function Commits() {
         </div>
       </div>
 
-      <div className="grid gap-3 rounded-2xl border border-[#30363d] bg-[#161b22] p-4 sm:grid-cols-2">
+      <div className="grid gap-3 rounded-2xl border border-[#30363d] bg-[#161b22] p-4 sm:grid-cols-3">
         <label className="space-y-2">
           <span className="text-xs font-semibold uppercase tracking-[0.2em] text-[#8b949e]">Buscar</span>
           <input
@@ -248,6 +276,21 @@ export default function Commits() {
             onChange={(event) => setSearchTerm(event.target.value)}
             placeholder="Mensagem, SHA ou autor"
             className="w-full rounded-xl border border-[#30363d] bg-[#0d1117] px-4 py-3 text-sm text-white outline-none transition focus:border-blue-500"
+          />
+        </label>
+
+        <label className="space-y-2 block">
+          <span className="text-xs font-semibold uppercase tracking-[0.2em] text-[#8b949e]">Org</span>
+          <Select
+            value={organizationOptions.find((option) => option.value === selectedOrganization)}
+            onChange={(option: { value: string; label: string } | null) =>
+              setSelectedOrganization(option?.value || "all")
+            }
+            options={organizationOptions}
+            styles={selectStyles}
+            isSearchable
+            placeholder="Todas"
+            noOptionsMessage={() => "Nenhuma org"}
           />
         </label>
 

@@ -12,7 +12,8 @@ export default function RecentRepos() {
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedRepo, setSelectedRepo] = useState("all");
+  const [selectedOrganization, setSelectedOrganization] = useState<string>("all");
+  const [selectedRepo, setSelectedRepo] = useState<string>("all");
   const [currentPage, setCurrentPage] = useState(1);
 
   const fetchRepos = async (isRefresh = false) => {
@@ -49,7 +50,11 @@ export default function RecentRepos() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, selectedRepo]);
+  }, [searchTerm, selectedOrganization, selectedRepo]);
+
+  useEffect(() => {
+    setSelectedRepo("all");
+  }, [selectedOrganization]);
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -124,17 +129,30 @@ export default function RecentRepos() {
     }),
   };
 
+  const organizationOptions = useMemo(
+    () => [
+      { value: "all", label: "Todas" },
+      ...Array.from(new Set(repos.map((repo) => repo.owner.login)))
+        .sort((firstOrg, secondOrg) => firstOrg.localeCompare(secondOrg))
+        .map((organization) => ({ value: organization, label: organization })),
+    ],
+    [repos]
+  );
+
   const repoOptions = useMemo(
     () => [
       { value: "all", label: "Todos" },
-      ...repos.map((repo) => ({ value: repo.full_name, label: repo.full_name })),
+      ...repos
+        .filter((repo) => selectedOrganization === "all" || repo.owner.login === selectedOrganization)
+        .map((repo) => ({ value: repo.full_name, label: repo.full_name })),
     ],
-    [repos]
+    [repos, selectedOrganization]
   );
 
   const { items: paginatedRepos, page: safeCurrentPage, total, totalPages } = getVisibleRecentRepos(
     repos,
     searchTerm,
+    selectedOrganization,
     selectedRepo,
     currentPage,
     itemsPerPage
@@ -174,7 +192,7 @@ export default function RecentRepos() {
         </div>
       </div>
 
-      <div className="grid gap-3 rounded-2xl border border-[#30363d] bg-[#161b22] p-4 sm:grid-cols-2">
+      <div className="grid gap-3 rounded-2xl border border-[#30363d] bg-[#161b22] p-4 sm:grid-cols-3">
         <label className="space-y-2">
           <span className="text-xs font-semibold uppercase tracking-[0.2em] text-[#8b949e]">Buscar</span>
           <input
@@ -183,6 +201,21 @@ export default function RecentRepos() {
             onChange={(event) => setSearchTerm(event.target.value)}
             placeholder="Nome, owner ou descrição"
             className="w-full rounded-xl border border-[#30363d] bg-[#0d1117] px-4 py-3 text-sm text-white outline-none transition focus:border-blue-500"
+          />
+        </label>
+
+        <label className="space-y-2">
+          <span className="text-xs font-semibold uppercase tracking-[0.2em] text-[#8b949e]">Org</span>
+          <Select
+            value={organizationOptions.find((option) => option.value === selectedOrganization)}
+            onChange={(option: { value: string; label: string } | null) =>
+              setSelectedOrganization(option?.value || "all")
+            }
+            options={organizationOptions}
+            styles={selectStyles}
+            isSearchable
+            placeholder="Todas"
+            noOptionsMessage={() => "Nenhuma org"}
           />
         </label>
 

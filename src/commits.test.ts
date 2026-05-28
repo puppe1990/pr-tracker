@@ -47,27 +47,34 @@ const commits: Commit[] = [
       },
     },
     html_url: "https://github.com/org/bravo/commit/ghi789",
-    repo: "org/bravo",
+    repo: "other/bravo",
   },
 ];
 
 describe("getVisibleCommits", () => {
   it("filters commits by search term across message, author, sha and repo", () => {
-    const result = getVisibleCommits(commits, "alice", "all", 1, 10);
+    const result = getVisibleCommits(commits, "alice", "all", "all", 1, 10);
 
     expect(result.total).toBe(1);
     expect(result.items.map((commit) => commit.sha)).toEqual(["abc123"]);
   });
 
-  it("filters commits by selected repository", () => {
-    const result = getVisibleCommits(commits, "", "org/bravo", 1, 10);
+  it("filters commits by organization", () => {
+    const result = getVisibleCommits(commits, "", "org", "all", 1, 10);
 
     expect(result.total).toBe(2);
-    expect(result.items.map((commit) => commit.sha)).toEqual(["def456", "ghi789"]);
+    expect(result.items.map((commit) => commit.sha)).toEqual(["abc123", "def456"]);
+  });
+
+  it("filters commits by selected repository", () => {
+    const result = getVisibleCommits(commits, "", "org", "org/bravo", 1, 10);
+
+    expect(result.total).toBe(1);
+    expect(result.items.map((commit) => commit.sha)).toEqual(["def456"]);
   });
 
   it("returns the requested page after filtering", () => {
-    const result = getVisibleCommits(commits, "", "all", 2, 1);
+    const result = getVisibleCommits(commits, "", "all", "all", 2, 1);
 
     expect(result.page).toBe(2);
     expect(result.items.map((commit) => commit.sha)).toEqual(["def456"]);

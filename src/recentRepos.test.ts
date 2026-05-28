@@ -11,6 +11,14 @@ const repos: RecentRepo[] = [
     html_url: "https://github.com/org/zebra",
   },
   {
+    full_name: "other/charlie",
+    name: "charlie",
+    owner: { login: "other", avatar_url: "" },
+    description: "fourth repo",
+    updated_at: "2024-01-04T10:00:00Z",
+    html_url: "https://github.com/other/charlie",
+  },
+  {
     full_name: "org/alpha",
     name: "alpha",
     owner: { login: "org", avatar_url: "" },
@@ -30,23 +38,30 @@ const repos: RecentRepo[] = [
 
 describe("getVisibleRecentRepos", () => {
   it("orders repos by most recent update", () => {
-    const result = getVisibleRecentRepos(repos, "", "all", 1, 2);
+    const result = getVisibleRecentRepos(repos, "", "all", "all", 1, 2);
 
-    expect(result.total).toBe(3);
+    expect(result.total).toBe(4);
     expect(result.totalPages).toBe(2);
-    expect(result.items.map((repo) => repo.name)).toEqual(["alpha", "bravo"]);
+    expect(result.items.map((repo) => repo.name)).toEqual(["charlie", "alpha"]);
   });
 
   it("filters repos by search term", () => {
-    const result = getVisibleRecentRepos(repos, "zeb", "all", 1, 10);
+    const result = getVisibleRecentRepos(repos, "zeb", "all", "all", 1, 10);
 
     expect(result.total).toBe(1);
     expect(result.totalPages).toBe(1);
     expect(result.items.map((repo) => repo.name)).toEqual(["zebra"]);
   });
 
+  it("filters repos by organization", () => {
+    const result = getVisibleRecentRepos(repos, "", "org", "all", 1, 10);
+
+    expect(result.total).toBe(3);
+    expect(result.items.map((repo) => repo.full_name)).toEqual(["org/alpha", "org/bravo", "org/zebra"]);
+  });
+
   it("filters repos by selected repository", () => {
-    const result = getVisibleRecentRepos(repos, "", "org/bravo", 1, 10);
+    const result = getVisibleRecentRepos(repos, "", "org", "org/bravo", 1, 10);
 
     expect(result.total).toBe(1);
     expect(result.totalPages).toBe(1);
@@ -54,9 +69,9 @@ describe("getVisibleRecentRepos", () => {
   });
 
   it("returns the requested page", () => {
-    const result = getVisibleRecentRepos(repos, "", "all", 2, 2);
+    const result = getVisibleRecentRepos(repos, "", "all", "all", 2, 2);
 
     expect(result.page).toBe(2);
-    expect(result.items.map((repo) => repo.name)).toEqual(["zebra"]);
+    expect(result.items.map((repo) => repo.name)).toEqual(["bravo", "zebra"]);
   });
 });

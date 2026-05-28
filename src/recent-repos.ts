@@ -1,3 +1,5 @@
+import { getRepoOrganization } from "./repo-organization";
+
 export interface RecentRepo {
   full_name: string;
   name: string;
@@ -20,6 +22,7 @@ interface VisibleRecentRepos {
 export function getVisibleRecentRepos(
   repos: RecentRepo[],
   searchTerm: string,
+  selectedOrganization: string,
   selectedRepo: string,
   currentPage: number,
   itemsPerPage: number
@@ -33,6 +36,11 @@ export function getVisibleRecentRepos(
         new Date(secondRepo.updated_at).getTime() - new Date(firstRepo.updated_at).getTime()
     )
     .filter((repo) => {
+      const repoOrganization = getRepoOrganization(repo.full_name);
+      if (selectedOrganization !== "all" && repoOrganization !== selectedOrganization) {
+        return false;
+      }
+
       if (selectedRepo !== "all" && repo.full_name !== selectedRepo) {
         return false;
       }

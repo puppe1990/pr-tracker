@@ -1,3 +1,5 @@
+import { getRepoOrganization } from "./repo-organization";
+
 export interface Commit {
   sha: string;
   commit: {
@@ -46,14 +48,18 @@ function matchesCommitSearch(commit: Commit, searchTerm: string): boolean {
 export function getVisibleCommits(
   commits: Commit[],
   searchTerm: string,
+  selectedOrganization: string,
   selectedRepo: string,
   currentPage: number,
   itemsPerPage: number
 ): VisibleCommits {
   const normalizedSearchTerm = normalizeSearchTerm(searchTerm);
   const filteredCommits = commits.filter((commit) => {
+    const commitOrganization = getRepoOrganization(commit.repo);
+    const matchesOrganization =
+      selectedOrganization === "all" || commitOrganization === selectedOrganization;
     const matchesRepo = selectedRepo === "all" || commit.repo === selectedRepo;
-    return matchesRepo && matchesCommitSearch(commit, normalizedSearchTerm);
+    return matchesOrganization && matchesRepo && matchesCommitSearch(commit, normalizedSearchTerm);
   });
 
   const total = filteredCommits.length;
