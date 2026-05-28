@@ -1,8 +1,34 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <rect width="64" height="64" rx="14" fill="#161b22" />
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1c2128"/>
+      <stop offset="100%" stop-color="#0d1117"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="64" height="64" rx="14" fill="url(#bg)"/>
+
+  <!-- PR merge icon -->
   <path
-    d="M18 16h28v8H18zM18 28h18v8H18zM18 40h28v8H18z"
-    fill="#58a6ff"
+    d="M32 16a4 4 0 1 1 0 8 4 4 0 0 1 0-8z
+       M32 40a4 4 0 1 1 0 8 4 4 0 0 1 0-8z
+       M48 28a4 4 0 1 1 0 8 4 4 0 0 1 0-8z"
+    fill="none"
+    stroke="#58a6ff"
+    stroke-width="3"
+    stroke-linecap="round"
+    stroke-linejoin="round"
   />
-  <circle cx="45" cy="32" r="7" fill="#f0f6fc" />
+  <path
+    d="M32 24v12M32 36l-6-6M32 36l6-6M48 28h-8M40 28l3-3M40 28l3 3"
+    fill="none"
+    stroke="#58a6ff"
+    stroke-width="2.5"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+
+  <!-- Badge -->
+  <circle cx="47" cy="16" r="8" fill="#3fb950"/>
+  <text x="47" y="19" text-anchor="middle" font-family="system-ui" font-size="10" font-weight="700" fill="#fff">3</text>
 </svg>
