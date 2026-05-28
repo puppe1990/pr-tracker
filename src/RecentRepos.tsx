@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
-import { ArrowLeft, AlertCircle, ChevronRight, Clock, FolderGit2, RefreshCw } from "lucide-react";
-import { motion, AnimatePresence } from "motion/react";
-import { getVisibleRecentRepos, type RecentRepo } from "./recent-repos";
+import { useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { ArrowLeft, AlertCircle, ChevronRight, Clock, FolderGit2, RefreshCw } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
+import Select, { StylesConfig } from 'react-select';
+import { getVisibleRecentRepos, type RecentRepo } from './recent-repos';
 
 export default function RecentRepos() {
   const itemsPerPage = 10;
@@ -10,7 +11,9 @@ export default function RecentRepos() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
-  const [searchTerm, setSearchTerm] = useState("");
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedOrganization, setSelectedOrganization] = useState<string>('all');
+  const [selectedRepo, setSelectedRepo] = useState<string>('all');
   const [currentPage, setCurrentPage] = useState(1);
 
   const fetchRepos = async (isRefresh = false) => {
@@ -23,18 +26,18 @@ export default function RecentRepos() {
     setError(null);
 
     try {
-      const response = await fetch("/api/repos");
+      const response = await fetch('/api/repos');
 
       if (response.ok) {
         const data: RecentRepo[] = await response.json();
         setRepos(data);
       } else {
         const errorData = await response.json().catch(() => null);
-        setError(errorData?.error || "Não foi possível carregar os repositórios.");
+        setError(errorData?.error || 'Não foi possível carregar os repositórios.');
       }
     } catch (err) {
-      console.error("Recent Repos Fetch Error:", err);
-      setError("Erro de conexão ao buscar repositórios.");
+      console.error('Recent Repos Fetch Error:', err);
+      setError('Erro de conexão ao buscar repositórios.');
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -47,22 +50,117 @@ export default function RecentRepos() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm]);
+  }, [searchTerm, selectedOrganization, selectedRepo]);
+
+  useEffect(() => {
+    setSelectedRepo('all');
+  }, [selectedOrganization]);
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return new Intl.DateTimeFormat("pt-BR", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
+    return new Intl.DateTimeFormat('pt-BR', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
     }).format(date);
   };
 
-  const { items: paginatedRepos, page: safeCurrentPage, total, totalPages } = getVisibleRecentRepos(
+  const selectStyles: StylesConfig = {
+    control: (base) => ({
+      ...base,
+      backgroundColor: '#0d1117',
+      borderColor: '#30363d',
+      borderRadius: '0.75rem',
+      minHeight: '48px',
+      boxShadow: 'none',
+      '&:hover': {
+        borderColor: '#3b82f6',
+      },
+    }),
+    menu: (base) => ({
+      ...base,
+      backgroundColor: '#161b22',
+      border: '1px solid #30363d',
+      borderRadius: '0.75rem',
+      overflow: 'hidden',
+    }),
+    menuList: (base) => ({
+      ...base,
+      padding: '4px',
+    }),
+    option: (base, state) => ({
+      ...base,
+      backgroundColor: state.isSelected ? '#21262d' : state.isFocused ? '#1c2128' : '#161b22',
+      color: '#c9d1d9',
+      borderRadius: '0.5rem',
+      padding: '8px 12px',
+      '&:active': {
+        backgroundColor: '#21262d',
+      },
+    }),
+    singleValue: (base) => ({
+      ...base,
+      color: '#c9d1d9',
+    }),
+    placeholder: (base) => ({
+      ...base,
+      color: '#8b949e',
+    }),
+    input: (base) => ({
+      ...base,
+      color: '#c9d1d9',
+    }),
+    dropdownIndicator: (base) => ({
+      ...base,
+      color: '#8b949e',
+      '&:hover': {
+        color: '#c9d1d9',
+      },
+    }),
+    indicatorSeparator: (base) => ({
+      ...base,
+      backgroundColor: '#30363d',
+    }),
+    noOptionsMessage: (base) => ({
+      ...base,
+      color: '#8b949e',
+    }),
+  };
+
+  const organizationOptions = useMemo(
+    () => [
+      { value: 'all', label: 'Todas' },
+      ...Array.from(new Set(repos.map((repo) => repo.owner.login)))
+        .sort((firstOrg, secondOrg) => firstOrg.localeCompare(secondOrg))
+        .map((organization) => ({ value: organization, label: organization })),
+    ],
+    [repos]
+  );
+
+  const repoOptions = useMemo(
+    () => [
+      { value: 'all', label: 'Todos' },
+      ...repos
+        .filter(
+          (repo) => selectedOrganization === 'all' || repo.owner.login === selectedOrganization
+        )
+        .map((repo) => ({ value: repo.full_name, label: repo.full_name })),
+    ],
+    [repos, selectedOrganization]
+  );
+
+  const {
+    items: paginatedRepos,
+    page: safeCurrentPage,
+    total,
+    totalPages,
+  } = getVisibleRecentRepos(
     repos,
     searchTerm,
+    selectedOrganization,
+    selectedRepo,
     currentPage,
     itemsPerPage
   );
@@ -91,7 +189,7 @@ export default function RecentRepos() {
             disabled={refreshing}
             className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium text-[#8b949e] hover:text-white hover:bg-[#21262d] transition-colors self-end disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <RefreshCw className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`} />
+            <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
             <span className="hidden sm:inline">Atualizar</span>
           </button>
           <div className="flex items-center gap-2 text-sm font-medium px-3 py-1 bg-blue-500/10 text-blue-400 rounded-full border border-blue-500/20">
@@ -101,15 +199,51 @@ export default function RecentRepos() {
         </div>
       </div>
 
-      <div className="grid gap-3 rounded-2xl border border-[#30363d] bg-[#161b22] p-4">
+      <div className="grid gap-3 rounded-2xl border border-[#30363d] bg-[#161b22] p-4 sm:grid-cols-3">
         <label className="space-y-2">
-          <span className="text-xs font-semibold uppercase tracking-[0.2em] text-[#8b949e]">Buscar</span>
+          <span className="text-xs font-semibold uppercase tracking-[0.2em] text-[#8b949e]">
+            Buscar
+          </span>
           <input
             type="text"
             value={searchTerm}
             onChange={(event) => setSearchTerm(event.target.value)}
             placeholder="Nome, owner ou descrição"
             className="w-full rounded-xl border border-[#30363d] bg-[#0d1117] px-4 py-3 text-sm text-white outline-none transition focus:border-blue-500"
+          />
+        </label>
+
+        <label className="space-y-2">
+          <span className="text-xs font-semibold uppercase tracking-[0.2em] text-[#8b949e]">
+            Org
+          </span>
+          <Select
+            value={organizationOptions.find((option) => option.value === selectedOrganization)}
+            onChange={(option: { value: string; label: string } | null) =>
+              setSelectedOrganization(option?.value || 'all')
+            }
+            options={organizationOptions}
+            styles={selectStyles}
+            isSearchable
+            placeholder="Todas"
+            noOptionsMessage={() => 'Nenhuma org'}
+          />
+        </label>
+
+        <label className="space-y-2">
+          <span className="text-xs font-semibold uppercase tracking-[0.2em] text-[#8b949e]">
+            Repositório
+          </span>
+          <Select
+            value={repoOptions.find((option) => option.value === selectedRepo)}
+            onChange={(option: { value: string; label: string } | null) =>
+              setSelectedRepo(option?.value || 'all')
+            }
+            options={repoOptions}
+            styles={selectStyles}
+            isSearchable
+            placeholder="Todos"
+            noOptionsMessage={() => 'Nenhum repositório'}
           />
         </label>
       </div>
@@ -135,7 +269,9 @@ export default function RecentRepos() {
                 <div className="h-14 w-14 animate-spin rounded-full border-2 border-[#30363d] border-t-blue-500"></div>
                 <div className="space-y-1">
                   <p className="text-lg font-semibold text-white">Buscando repositórios</p>
-                  <p className="text-sm text-[#8b949e]">Carregando do mais recente para o mais antigo.</p>
+                  <p className="text-sm text-[#8b949e]">
+                    Carregando do mais recente para o mais antigo.
+                  </p>
                 </div>
               </div>
             </motion.div>
@@ -169,7 +305,7 @@ export default function RecentRepos() {
                       {repo.name}
                     </h3>
                     <p className="text-sm text-[#8b949e] line-clamp-2">
-                      {repo.description || "Sem descrição."}
+                      {repo.description || 'Sem descrição.'}
                     </p>
                   </div>
 
@@ -180,7 +316,11 @@ export default function RecentRepos() {
           ) : (
             <div className="text-center py-20 bg-[#161b22] border border-dashed border-[#30363d] rounded-2xl">
               <FolderGit2 className="w-12 h-12 text-[#30363d] mx-auto mb-4" />
-              <p className="text-[#8b949e]">Nenhum repositório recente encontrado.</p>
+              <p className="text-[#8b949e]">
+                {repos.length > 0
+                  ? 'Nenhum repositório corresponde aos filtros atuais.'
+                  : 'Nenhum repositório recente encontrado.'}
+              </p>
             </div>
           )}
         </AnimatePresence>

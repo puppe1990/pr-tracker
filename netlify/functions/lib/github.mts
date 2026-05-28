@@ -1,27 +1,26 @@
-import axios from "axios";
+import axios from 'axios';
 
 const getGithubToken = () =>
-  Netlify.env.get("GITHUB_PERSONAL_ACCESS_TOKEN") ||
-  Netlify.env.get("GITHUB_TOKEN");
+  Netlify.env.get('GITHUB_PERSONAL_ACCESS_TOKEN') || Netlify.env.get('GITHUB_TOKEN');
 
 const getGithubHeaders = (token: string) => ({
   Authorization: `Bearer ${token}`,
-  Accept: "application/vnd.github+json",
-  "X-GitHub-Api-Version": "2022-11-28",
+  Accept: 'application/vnd.github+json',
+  'X-GitHub-Api-Version': '2022-11-28',
 });
 
 export const getConfiguredGithubToken = () => {
   const token = getGithubToken();
 
   if (!token) {
-    throw new Error("GitHub token not configured");
+    throw new Error('GitHub token not configured');
   }
 
   return token;
 };
 
 export const githubApi = axios.create({
-  baseURL: "https://api.github.com",
+  baseURL: 'https://api.github.com',
 });
 
 export const githubRequest = <T,>(
@@ -39,9 +38,9 @@ export const parseLinkHeader = (header: string | null | undefined) => {
     return {} as Record<string, string>;
   }
 
-  return header.split(",").reduce<Record<string, string>>((links, part) => {
-    const section = part.split(";");
-    const url = section[0]?.trim().replace(/^<|>$/g, "");
+  return header.split(',').reduce<Record<string, string>>((links, part) => {
+    const section = part.split(';');
+    const url = section[0]?.trim().replace(/^<|>$/g, '');
     const rel = section[1]?.match(/rel="(.+)"/)?.[1];
 
     if (url && rel) {
@@ -56,10 +55,7 @@ interface SearchIssuesResponse<TItem> {
   items?: TItem[];
 }
 
-export const fetchAllSearchIssues = async <TItem,>(
-  query: string,
-  token: string
-) => {
+export const fetchAllSearchIssues = async <TItem,>(query: string, token: string) => {
   const items: TItem[] = [];
   const perPage = 100;
 

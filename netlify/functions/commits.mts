@@ -1,9 +1,5 @@
-import type { Context } from "@netlify/functions";
-import {
-  getConfiguredGithubToken,
-  githubRequest,
-  parseLinkHeader,
-} from "./lib/github.mts";
+import type { Context } from '@netlify/functions';
+import { getConfiguredGithubToken, githubRequest, parseLinkHeader } from './lib/github.mts';
 
 interface CommitData {
   sha: string;
@@ -38,27 +34,26 @@ export default async (req: Request, _context: Context) => {
   try {
     const token = getConfiguredGithubToken();
     const url = new URL(req.url);
-    const repo = url.searchParams.get("repo");
-    const page = Math.max(1, Number.parseInt(url.searchParams.get("page") ?? "1", 10) || 1);
+    const repo = url.searchParams.get('repo');
+    const page = Math.max(1, Number.parseInt(url.searchParams.get('page') ?? '1', 10) || 1);
     const perPage = Math.min(
       100,
-      Math.max(1, Number.parseInt(url.searchParams.get("per_page") ?? "20", 10) || 20)
+      Math.max(1, Number.parseInt(url.searchParams.get('per_page') ?? '20', 10) || 20)
     );
 
     if (repo) {
-      const response = await githubRequest<CommitData[]>(
-        `/repos/${repo}/commits`,
-        token,
-        {
-          per_page: perPage,
-          page,
-        }
-      );
+      const response = await githubRequest<CommitData[]>(`/repos/${repo}/commits`, token, {
+        per_page: perPage,
+        page,
+      });
 
       const links = parseLinkHeader(response.headers.link as string | undefined);
 
       return Response.json({
-        commits: response.data,
+        commits: response.data.map((commit) => ({
+          ...commit,
+          repo,
+        })),
         pagination: {
           page,
           per_page: perPage,
@@ -68,15 +63,11 @@ export default async (req: Request, _context: Context) => {
       });
     }
 
-    const reposResponse = await githubRequest<RepoData[]>(
-      "/user/repos",
-      token,
-      {
-        sort: "updated",
-        direction: "desc",
-        per_page: 50,
-      }
-    );
+    const reposResponse = await githubRequest<RepoData[]>('/user/repos', token, {
+      sort: 'updated',
+      direction: 'desc',
+      per_page: 50,
+    });
 
     const repos = reposResponse.data;
     const allCommits: CommitData[] = [];
@@ -104,8 +95,7 @@ export default async (req: Request, _context: Context) => {
     }
 
     allCommits.sort(
-      (a, b) =>
-        new Date(b.commit.author.date).getTime() - new Date(a.commit.author.date).getTime()
+      (a, b) => new Date(b.commit.author.date).getTime() - new Date(a.commit.author.date).getTime()
     );
 
     return Response.json({
@@ -119,17 +109,17 @@ export default async (req: Request, _context: Context) => {
       repos,
     });
   } catch (error) {
-    if (error instanceof Error && error.message === "GitHub token not configured") {
+    if (error instanceof Error && error.message === 'GitHub token not configured') {
       return Response.json(
         {
-          error: "GitHub token not configured",
-          missingEnv: "GITHUB_PERSONAL_ACCESS_TOKEN",
+          error: 'GitHub token not configured',
+          missingEnv: 'GITHUB_PERSONAL_ACCESS_TOKEN',
         },
         { status: 503 }
       );
     }
 
-    console.error("Netlify commits function error:", error);
-    return Response.json({ error: "Failed to fetch commits" }, { status: 500 });
+    console.error('Netlify commits function error:', error);
+    return Response.json({ error: 'Failed to fetch commits' }, { status: 500 });
   }
 };
