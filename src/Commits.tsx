@@ -67,7 +67,14 @@ export default function Commits() {
 
       if (response.ok) {
         const data: CommitsResponse = await response.json();
-        setCommits(data.commits);
+        setCommits(
+          selectedRepo === 'all'
+            ? data.commits
+            : data.commits.map((commit) => ({
+                ...commit,
+                repo: selectedRepo,
+              }))
+        );
         setPagination(data.pagination);
 
         // Store repos if returned from API

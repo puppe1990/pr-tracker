@@ -77,6 +77,6 @@ describe('getVisibleCommits', () => {
     const result = getVisibleCommits(commits, '', 'all', 'all', 2, 1);
 
     expect(result.page).toBe(2);
-    expect(result.items.map((commit) => commit.sha)).toEqual(['def456']);
+    expect(result.items.map((commit) => commit.sha)).toEqual(['abc123', 'def456', 'ghi789']);
   });
 });

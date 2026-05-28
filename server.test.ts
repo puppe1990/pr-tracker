@@ -121,6 +121,7 @@ describe('GET /api/commits', () => {
     expect(response.body.pagination).toHaveProperty('has_prev', false);
     expect(Array.isArray(response.body.commits)).toBe(true);
     expect(response.body.commits).toHaveLength(2);
+    expect(response.body.commits[0]).toHaveProperty('repo', 'test/repo');
   });
 
   it('should return paginated commits when page 2 is requested', async () => {

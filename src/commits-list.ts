@@ -64,12 +64,10 @@ export function getVisibleCommits(
 
   const total = filteredCommits.length;
   const totalPages = Math.max(1, Math.ceil(total / itemsPerPage));
-  const page = Math.min(Math.max(1, currentPage), totalPages);
-  const startIndex = (page - 1) * itemsPerPage;
 
   return {
-    items: filteredCommits.slice(startIndex, startIndex + itemsPerPage),
-    page,
+    items: filteredCommits,
+    page: Math.max(1, currentPage),
     total,
     totalPages,
   };

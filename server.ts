@@ -208,7 +208,10 @@ export async function createApp() {
         const hasPrev = Boolean(links.prev);
 
         const commitsResponse: CommitsResponse = {
-          commits: response.data,
+          commits: response.data.map((commit) => ({
+            ...commit,
+            repo,
+          })),
           pagination: {
             page: pageNum,
             per_page: perPageNum,

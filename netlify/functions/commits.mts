@@ -50,7 +50,10 @@ export default async (req: Request, _context: Context) => {
       const links = parseLinkHeader(response.headers.link as string | undefined);
 
       return Response.json({
-        commits: response.data,
+        commits: response.data.map((commit) => ({
+          ...commit,
+          repo,
+        })),
         pagination: {
           page,
           per_page: perPage,
