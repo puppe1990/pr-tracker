@@ -1,9 +1,9 @@
-import { useState, useEffect, useMemo } from "react";
-import { Link } from "react-router-dom";
-import { GitCommit, Clock, ChevronRight, AlertCircle, ArrowLeft, RefreshCw } from "lucide-react";
-import { motion, AnimatePresence } from "motion/react";
-import Select, { StylesConfig } from "react-select";
-import { getVisibleCommits, type Commit } from "./commits-list";
+import { useState, useEffect, useMemo } from 'react';
+import { Link } from 'react-router-dom';
+import { GitCommit, Clock, ChevronRight, AlertCircle, ArrowLeft, RefreshCw } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
+import Select, { StylesConfig } from 'react-select';
+import { getVisibleCommits, type Commit } from './commits-list';
 
 interface Repo {
   full_name: string;
@@ -33,10 +33,10 @@ export default function Commits() {
   const [commits, setCommits] = useState<Commit[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedOrganization, setSelectedOrganization] = useState<string>("all");
-  const [selectedRepo, setSelectedRepo] = useState<string>("all");
+  const [selectedOrganization, setSelectedOrganization] = useState<string>('all');
+  const [selectedRepo, setSelectedRepo] = useState<string>('all');
   const [repos, setRepos] = useState<Repo[]>([]);
-  const [searchTerm, setSearchTerm] = useState("");
+  const [searchTerm, setSearchTerm] = useState('');
   const [pagination, setPagination] = useState<Pagination>({
     page: 1,
     per_page: 20,
@@ -59,8 +59,8 @@ export default function Commits() {
         per_page: pagination.per_page.toString(),
       });
 
-      if (selectedRepo !== "all") {
-        params.append("repo", selectedRepo);
+      if (selectedRepo !== 'all') {
+        params.append('repo', selectedRepo);
       }
 
       const response = await fetch(`/api/commits?${params.toString()}`);
@@ -69,18 +69,18 @@ export default function Commits() {
         const data: CommitsResponse = await response.json();
         setCommits(data.commits);
         setPagination(data.pagination);
-        
+
         // Store repos if returned from API
         if (data.repos) {
           setRepos(data.repos);
         }
       } else {
         const errorData = await response.json().catch(() => null);
-        setError(errorData?.error || "Failed to fetch commits");
+        setError(errorData?.error || 'Failed to fetch commits');
       }
     } catch (err) {
-      setError("Connection error while fetching commits");
-      console.error("Commits Fetch Error:", err);
+      setError('Connection error while fetching commits');
+      console.error('Commits Fetch Error:', err);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -89,13 +89,13 @@ export default function Commits() {
 
   const fetchRepos = async () => {
     try {
-      const response = await fetch("/api/repos");
+      const response = await fetch('/api/repos');
       if (response.ok) {
         const data: Repo[] = await response.json();
         setRepos(data);
       }
     } catch (err) {
-      console.error("Repos Fetch Error:", err);
+      console.error('Repos Fetch Error:', err);
     }
   };
 
@@ -108,17 +108,17 @@ export default function Commits() {
   }, []);
 
   useEffect(() => {
-    setSelectedRepo("all");
+    setSelectedRepo('all');
   }, [selectedOrganization]);
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return new Intl.DateTimeFormat("pt-BR", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
+    return new Intl.DateTimeFormat('pt-BR', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
     }).format(date);
   };
 
@@ -141,68 +141,68 @@ export default function Commits() {
   const selectStyles: StylesConfig = {
     control: (base) => ({
       ...base,
-      backgroundColor: "#0d1117",
-      borderColor: "#30363d",
-      borderRadius: "0.75rem",
-      minHeight: "48px",
-      boxShadow: "none",
-      "&:hover": {
-        borderColor: "#3b82f6",
+      backgroundColor: '#0d1117',
+      borderColor: '#30363d',
+      borderRadius: '0.75rem',
+      minHeight: '48px',
+      boxShadow: 'none',
+      '&:hover': {
+        borderColor: '#3b82f6',
       },
     }),
     menu: (base) => ({
       ...base,
-      backgroundColor: "#161b22",
-      border: "1px solid #30363d",
-      borderRadius: "0.75rem",
-      overflow: "hidden",
+      backgroundColor: '#161b22',
+      border: '1px solid #30363d',
+      borderRadius: '0.75rem',
+      overflow: 'hidden',
     }),
     menuList: (base) => ({
       ...base,
-      padding: "4px",
+      padding: '4px',
     }),
     option: (base, state) => ({
       ...base,
-      backgroundColor: state.isSelected ? "#21262d" : state.isFocused ? "#1c2128" : "#161b22",
-      color: "#c9d1d9",
-      borderRadius: "0.5rem",
-      padding: "8px 12px",
-      "&:active": {
-        backgroundColor: "#21262d",
+      backgroundColor: state.isSelected ? '#21262d' : state.isFocused ? '#1c2128' : '#161b22',
+      color: '#c9d1d9',
+      borderRadius: '0.5rem',
+      padding: '8px 12px',
+      '&:active': {
+        backgroundColor: '#21262d',
       },
     }),
     singleValue: (base) => ({
       ...base,
-      color: "#c9d1d9",
+      color: '#c9d1d9',
     }),
     placeholder: (base) => ({
       ...base,
-      color: "#8b949e",
+      color: '#8b949e',
     }),
     input: (base) => ({
       ...base,
-      color: "#c9d1d9",
+      color: '#c9d1d9',
     }),
     dropdownIndicator: (base) => ({
       ...base,
-      color: "#8b949e",
-      "&:hover": {
-        color: "#c9d1d9",
+      color: '#8b949e',
+      '&:hover': {
+        color: '#c9d1d9',
       },
     }),
     indicatorSeparator: (base) => ({
       ...base,
-      backgroundColor: "#30363d",
+      backgroundColor: '#30363d',
     }),
     noOptionsMessage: (base) => ({
       ...base,
-      color: "#8b949e",
+      color: '#8b949e',
     }),
   };
 
   const organizationOptions = useMemo(
     () => [
-      { value: "all", label: "Todas" },
+      { value: 'all', label: 'Todas' },
       ...Array.from(new Set(repos.map((repo) => repo.owner.login)))
         .sort((firstOrg, secondOrg) => firstOrg.localeCompare(secondOrg))
         .map((organization) => ({ value: organization, label: organization })),
@@ -212,9 +212,11 @@ export default function Commits() {
 
   const repoOptions = useMemo(
     () => [
-      { value: "all", label: "Todos" },
+      { value: 'all', label: 'Todos' },
       ...repos
-        .filter((repo) => selectedOrganization === "all" || repo.owner.login === selectedOrganization)
+        .filter(
+          (repo) => selectedOrganization === 'all' || repo.owner.login === selectedOrganization
+        )
         .map((repo) => ({ value: repo.full_name, label: repo.full_name })),
     ],
     [repos, selectedOrganization]
@@ -257,7 +259,7 @@ export default function Commits() {
             disabled={refreshing}
             className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium text-[#8b949e] hover:text-white hover:bg-[#21262d] transition-colors self-end disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <RefreshCw className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`} />
+            <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
             <span className="hidden sm:inline">Refresh</span>
           </button>
           <div className="flex items-center gap-2 text-sm font-medium px-3 py-1 bg-blue-500/10 text-blue-400 rounded-full border border-blue-500/20">
@@ -269,7 +271,9 @@ export default function Commits() {
 
       <div className="grid gap-3 rounded-2xl border border-[#30363d] bg-[#161b22] p-4 sm:grid-cols-3">
         <label className="space-y-2">
-          <span className="text-xs font-semibold uppercase tracking-[0.2em] text-[#8b949e]">Buscar</span>
+          <span className="text-xs font-semibold uppercase tracking-[0.2em] text-[#8b949e]">
+            Buscar
+          </span>
           <input
             type="text"
             value={searchTerm}
@@ -280,17 +284,19 @@ export default function Commits() {
         </label>
 
         <label className="space-y-2 block">
-          <span className="text-xs font-semibold uppercase tracking-[0.2em] text-[#8b949e]">Org</span>
+          <span className="text-xs font-semibold uppercase tracking-[0.2em] text-[#8b949e]">
+            Org
+          </span>
           <Select
             value={organizationOptions.find((option) => option.value === selectedOrganization)}
             onChange={(option: { value: string; label: string } | null) =>
-              setSelectedOrganization(option?.value || "all")
+              setSelectedOrganization(option?.value || 'all')
             }
             options={organizationOptions}
             styles={selectStyles}
             isSearchable
             placeholder="Todas"
-            noOptionsMessage={() => "Nenhuma org"}
+            noOptionsMessage={() => 'Nenhuma org'}
           />
         </label>
 
@@ -300,12 +306,14 @@ export default function Commits() {
           </span>
           <Select
             value={repoOptions.find((opt) => opt.value === selectedRepo)}
-            onChange={(option: { value: string; label: string } | null) => setSelectedRepo(option?.value || "all")}
+            onChange={(option: { value: string; label: string } | null) =>
+              setSelectedRepo(option?.value || 'all')
+            }
             options={repoOptions}
             styles={selectStyles}
             isSearchable
             placeholder="Todos"
-            noOptionsMessage={() => "Nenhum repositório"}
+            noOptionsMessage={() => 'Nenhum repositório'}
           />
         </label>
       </div>
@@ -334,9 +342,7 @@ export default function Commits() {
                 </div>
                 <div className="space-y-1">
                   <p className="text-lg font-semibold text-white">Loading commits</p>
-                  <p className="text-sm text-[#8b949e]">
-                    Fetching commits from GitHub API...
-                  </p>
+                  <p className="text-sm text-[#8b949e]">Fetching commits from GitHub API...</p>
                 </div>
               </div>
             </motion.div>
@@ -379,7 +385,7 @@ export default function Commits() {
                       </span>
                     </div>
                     <h3 className="text-lg font-semibold text-white group-hover:text-blue-400 transition-colors">
-                      {commit.commit.message.split("\n")[0]}
+                      {commit.commit.message.split('\n')[0]}
                     </h3>
                     <p className="text-sm text-[#8b949e]">
                       by {commit.author?.login || commit.commit.author.name}
@@ -394,7 +400,7 @@ export default function Commits() {
             <div className="text-center py-20 bg-[#161b22] border border-dashed border-[#30363d] rounded-2xl">
               <GitCommit className="w-12 h-12 text-[#30363d] mx-auto mb-4" />
               <p className="text-[#8b949e]">
-                {commits.length > 0 ? "No commits match the current filters." : "No commits found."}
+                {commits.length > 0 ? 'No commits match the current filters.' : 'No commits found.'}
               </p>
             </div>
           )}

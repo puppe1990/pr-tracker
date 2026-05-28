@@ -1,82 +1,82 @@
-import { describe, expect, it } from "vitest";
-import { getVisibleCommits, type Commit } from "./commits-list";
+import { describe, expect, it } from 'vitest';
+import { getVisibleCommits, type Commit } from './commits-list';
 
 const commits: Commit[] = [
   {
-    sha: "abc123",
+    sha: 'abc123',
     commit: {
-      message: "Fix login bug",
+      message: 'Fix login bug',
       author: {
-        name: "Alice Example",
-        email: "alice@example.com",
-        date: "2024-01-01T10:00:00Z",
+        name: 'Alice Example',
+        email: 'alice@example.com',
+        date: '2024-01-01T10:00:00Z',
       },
     },
-    html_url: "https://github.com/org/alpha/commit/abc123",
-    repo: "org/alpha",
+    html_url: 'https://github.com/org/alpha/commit/abc123',
+    repo: 'org/alpha',
     author: {
-      login: "alice",
-      avatar_url: "",
+      login: 'alice',
+      avatar_url: '',
     },
   },
   {
-    sha: "def456",
+    sha: 'def456',
     commit: {
-      message: "Add search filters",
+      message: 'Add search filters',
       author: {
-        name: "Bob Example",
-        email: "bob@example.com",
-        date: "2024-01-02T10:00:00Z",
+        name: 'Bob Example',
+        email: 'bob@example.com',
+        date: '2024-01-02T10:00:00Z',
       },
     },
-    html_url: "https://github.com/org/bravo/commit/def456",
-    repo: "org/bravo",
+    html_url: 'https://github.com/org/bravo/commit/def456',
+    repo: 'org/bravo',
     author: {
-      login: "bob",
-      avatar_url: "",
+      login: 'bob',
+      avatar_url: '',
     },
   },
   {
-    sha: "ghi789",
+    sha: 'ghi789',
     commit: {
-      message: "Update docs",
+      message: 'Update docs',
       author: {
-        name: "Carol Example",
-        email: "carol@example.com",
-        date: "2024-01-03T10:00:00Z",
+        name: 'Carol Example',
+        email: 'carol@example.com',
+        date: '2024-01-03T10:00:00Z',
       },
     },
-    html_url: "https://github.com/org/bravo/commit/ghi789",
-    repo: "other/bravo",
+    html_url: 'https://github.com/org/bravo/commit/ghi789',
+    repo: 'other/bravo',
   },
 ];
 
-describe("getVisibleCommits", () => {
-  it("filters commits by search term across message, author, sha and repo", () => {
-    const result = getVisibleCommits(commits, "alice", "all", "all", 1, 10);
+describe('getVisibleCommits', () => {
+  it('filters commits by search term across message, author, sha and repo', () => {
+    const result = getVisibleCommits(commits, 'alice', 'all', 'all', 1, 10);
 
     expect(result.total).toBe(1);
-    expect(result.items.map((commit) => commit.sha)).toEqual(["abc123"]);
+    expect(result.items.map((commit) => commit.sha)).toEqual(['abc123']);
   });
 
-  it("filters commits by organization", () => {
-    const result = getVisibleCommits(commits, "", "org", "all", 1, 10);
+  it('filters commits by organization', () => {
+    const result = getVisibleCommits(commits, '', 'org', 'all', 1, 10);
 
     expect(result.total).toBe(2);
-    expect(result.items.map((commit) => commit.sha)).toEqual(["abc123", "def456"]);
+    expect(result.items.map((commit) => commit.sha)).toEqual(['abc123', 'def456']);
   });
 
-  it("filters commits by selected repository", () => {
-    const result = getVisibleCommits(commits, "", "org", "org/bravo", 1, 10);
+  it('filters commits by selected repository', () => {
+    const result = getVisibleCommits(commits, '', 'org', 'org/bravo', 1, 10);
 
     expect(result.total).toBe(1);
-    expect(result.items.map((commit) => commit.sha)).toEqual(["def456"]);
+    expect(result.items.map((commit) => commit.sha)).toEqual(['def456']);
   });
 
-  it("returns the requested page after filtering", () => {
-    const result = getVisibleCommits(commits, "", "all", "all", 2, 1);
+  it('returns the requested page after filtering', () => {
+    const result = getVisibleCommits(commits, '', 'all', 'all', 2, 1);
 
     expect(result.page).toBe(2);
-    expect(result.items.map((commit) => commit.sha)).toEqual(["def456"]);
+    expect(result.items.map((commit) => commit.sha)).toEqual(['def456']);
   });
 });

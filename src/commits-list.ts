@@ -1,4 +1,4 @@
-import { getRepoOrganization } from "./repo-organization";
+import { getRepoOrganization } from './repo-organization';
 
 export interface Commit {
   sha: string;
@@ -38,8 +38,8 @@ function matchesCommitSearch(commit: Commit, searchTerm: string): boolean {
     commit.sha,
     commit.commit.message,
     commit.commit.author.name,
-    commit.author?.login || "",
-    commit.repo || "",
+    commit.author?.login || '',
+    commit.repo || '',
   ];
 
   return searchableFields.some((field) => field.toLowerCase().includes(searchTerm));
@@ -57,8 +57,8 @@ export function getVisibleCommits(
   const filteredCommits = commits.filter((commit) => {
     const commitOrganization = getRepoOrganization(commit.repo);
     const matchesOrganization =
-      selectedOrganization === "all" || commitOrganization === selectedOrganization;
-    const matchesRepo = selectedRepo === "all" || commit.repo === selectedRepo;
+      selectedOrganization === 'all' || commitOrganization === selectedOrganization;
+    const matchesRepo = selectedRepo === 'all' || commit.repo === selectedRepo;
     return matchesOrganization && matchesRepo && matchesCommitSearch(commit, normalizedSearchTerm);
   });
 

@@ -1,5 +1,5 @@
-import type { Application } from "express";
-import type { Server } from "net";
+import type { Application } from 'express';
+import type { Server } from 'net';
 
 /**
  * Start listening on the first available TCP port starting from `startPort`.
@@ -28,12 +28,12 @@ export function listenOnAvailablePort(
       }
 
       attempts += 1;
-      const server = app.listen(port, "0.0.0.0", () => {
+      const server = app.listen(port, '0.0.0.0', () => {
         resolve({ server, port });
       });
 
-      server.once("error", (err: NodeJS.ErrnoException) => {
-        if (err.code === "EADDRINUSE") {
+      server.once('error', (err: NodeJS.ErrnoException) => {
+        if (err.code === 'EADDRINUSE') {
           port += 1;
           tryListen();
         } else {

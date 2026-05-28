@@ -1,4 +1,4 @@
-import { getRepoOrganization } from "./repo-organization";
+import { getRepoOrganization } from './repo-organization';
 
 export interface RecentRepo {
   full_name: string;
@@ -37,11 +37,11 @@ export function getVisibleRecentRepos(
     )
     .filter((repo) => {
       const repoOrganization = getRepoOrganization(repo.full_name);
-      if (selectedOrganization !== "all" && repoOrganization !== selectedOrganization) {
+      if (selectedOrganization !== 'all' && repoOrganization !== selectedOrganization) {
         return false;
       }
 
-      if (selectedRepo !== "all" && repo.full_name !== selectedRepo) {
+      if (selectedRepo !== 'all' && repo.full_name !== selectedRepo) {
         return false;
       }
 
@@ -52,7 +52,7 @@ export function getVisibleRecentRepos(
       return (
         repo.name.toLowerCase().includes(normalizedSearch) ||
         repo.full_name.toLowerCase().includes(normalizedSearch) ||
-        (repo.description || "").toLowerCase().includes(normalizedSearch)
+        (repo.description || '').toLowerCase().includes(normalizedSearch)
       );
     });
 

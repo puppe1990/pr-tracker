@@ -1,7 +1,7 @@
 export function getRepoOrganization(fullName: string | undefined): string {
   if (!fullName) {
-    return "";
+    return '';
   }
 
-  return fullName.split("/")[0] || "";
+  return fullName.split('/')[0] || '';
 }
