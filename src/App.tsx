@@ -17,6 +17,7 @@ import Select, { StylesConfig } from 'react-select';
 import Commits from './Commits';
 import RecentRepos from './RecentRepos';
 import Issues from './Issues';
+import { ListPageButtons } from './ListPageButtons';
 import { ColorSchemeToggle } from './ColorSchemeToggle';
 import {
   applyColorScheme,
@@ -600,29 +601,11 @@ export default function App() {
                         {filteredPrs.length} PRs
                       </p>
 
-                      <div className="flex items-center gap-2">
-                        <button
-                          type="button"
-                          onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
-                          disabled={safeCurrentPage === 1}
-                          className="rounded-xl border border-line px-4 py-2 text-sm font-medium text-fg-strong transition disabled:cursor-not-allowed disabled:opacity-40 hover:border-blue-500 hover:text-blue-400"
-                        >
-                          Anterior
-                        </button>
-
-                        <span className="min-w-24 text-center text-sm text-fg-muted">
-                          Página {safeCurrentPage} de {totalPages}
-                        </span>
-
-                        <button
-                          type="button"
-                          onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
-                          disabled={safeCurrentPage === totalPages}
-                          className="rounded-xl border border-line px-4 py-2 text-sm font-medium text-fg-strong transition disabled:cursor-not-allowed disabled:opacity-40 hover:border-blue-500 hover:text-blue-400"
-                        >
-                          Próxima
-                        </button>
-                      </div>
+                      <ListPageButtons
+                        currentPage={safeCurrentPage}
+                        totalPages={totalPages}
+                        onPageChange={setCurrentPage}
+                      />
                     </div>
                   ) : null}
                 </div>
