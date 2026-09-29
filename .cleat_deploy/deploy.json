@@ -1,0 +1,7 @@
+{
+  "runtime": "node",
+  "node_version": "22",
+  "build_command": "HUSKY=0 npm ci && npm run build",
+  "start_command": "npm start",
+  "memory_max_mb": 400
+}
