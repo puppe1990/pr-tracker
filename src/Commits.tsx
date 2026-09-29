@@ -148,8 +148,8 @@ export default function Commits() {
   const selectStyles: StylesConfig = {
     control: (base) => ({
       ...base,
-      backgroundColor: '#0d1117',
-      borderColor: '#30363d',
+      backgroundColor: 'var(--pr-canvas)',
+      borderColor: 'var(--pr-border)',
       borderRadius: '0.75rem',
       minHeight: '48px',
       boxShadow: 'none',
@@ -159,8 +159,8 @@ export default function Commits() {
     }),
     menu: (base) => ({
       ...base,
-      backgroundColor: '#161b22',
-      border: '1px solid #30363d',
+      backgroundColor: 'var(--pr-surface)',
+      border: '1px solid var(--pr-border)',
       borderRadius: '0.75rem',
       overflow: 'hidden',
     }),
@@ -170,40 +170,44 @@ export default function Commits() {
     }),
     option: (base, state) => ({
       ...base,
-      backgroundColor: state.isSelected ? '#21262d' : state.isFocused ? '#1c2128' : '#161b22',
-      color: '#c9d1d9',
+      backgroundColor: state.isSelected
+        ? 'var(--pr-muted)'
+        : state.isFocused
+          ? 'var(--pr-focus)'
+          : 'var(--pr-surface)',
+      color: 'var(--pr-fg)',
       borderRadius: '0.5rem',
       padding: '8px 12px',
       '&:active': {
-        backgroundColor: '#21262d',
+        backgroundColor: 'var(--pr-muted)',
       },
     }),
     singleValue: (base) => ({
       ...base,
-      color: '#c9d1d9',
+      color: 'var(--pr-fg)',
     }),
     placeholder: (base) => ({
       ...base,
-      color: '#8b949e',
+      color: 'var(--pr-fg-muted)',
     }),
     input: (base) => ({
       ...base,
-      color: '#c9d1d9',
+      color: 'var(--pr-fg)',
     }),
     dropdownIndicator: (base) => ({
       ...base,
-      color: '#8b949e',
+      color: 'var(--pr-fg-muted)',
       '&:hover': {
-        color: '#c9d1d9',
+        color: 'var(--pr-fg)',
       },
     }),
     indicatorSeparator: (base) => ({
       ...base,
-      backgroundColor: '#30363d',
+      backgroundColor: 'var(--pr-border)',
     }),
     noOptionsMessage: (base) => ({
       ...base,
-      color: '#8b949e',
+      color: 'var(--pr-fg-muted)',
     }),
   };
 
@@ -247,7 +251,7 @@ export default function Commits() {
       <div className="flex items-center gap-4">
         <Link
           to="/"
-          className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-[#8b949e] hover:text-white hover:bg-[#21262d] transition-colors"
+          className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-fg-muted hover:text-fg-strong hover:bg-muted transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
           <span>Back to PRs</span>
@@ -256,15 +260,15 @@ export default function Commits() {
 
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
-          <h2 className="text-3xl font-bold text-white tracking-tight">Commits</h2>
-          <p className="text-[#8b949e] mt-1">Browse commits from all your repositories.</p>
+          <h2 className="text-3xl font-bold text-fg-strong tracking-tight">Commits</h2>
+          <p className="text-fg-muted mt-1">Browse commits from all your repositories.</p>
         </div>
         <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={handleRefresh}
             disabled={refreshing}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium text-[#8b949e] hover:text-white hover:bg-[#21262d] transition-colors self-end disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium text-fg-muted hover:text-fg-strong hover:bg-muted transition-colors self-end disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
             <span className="hidden sm:inline">Refresh</span>
@@ -276,9 +280,9 @@ export default function Commits() {
         </div>
       </div>
 
-      <div className="grid gap-3 rounded-2xl border border-[#30363d] bg-[#161b22] p-4 sm:grid-cols-3">
+      <div className="grid gap-3 rounded-2xl border border-line bg-surface p-4 sm:grid-cols-3">
         <label className="space-y-2">
-          <span className="text-xs font-semibold uppercase tracking-[0.2em] text-[#8b949e]">
+          <span className="text-xs font-semibold uppercase tracking-[0.2em] text-fg-muted">
             Buscar
           </span>
           <input
@@ -286,12 +290,12 @@ export default function Commits() {
             value={searchTerm}
             onChange={(event) => setSearchTerm(event.target.value)}
             placeholder="Mensagem, SHA ou autor"
-            className="w-full rounded-xl border border-[#30363d] bg-[#0d1117] px-4 py-3 text-sm text-white outline-none transition focus:border-blue-500"
+            className="w-full rounded-xl border border-line bg-canvas px-4 py-3 text-sm text-fg-strong outline-none transition focus:border-blue-500"
           />
         </label>
 
         <label className="space-y-2 block">
-          <span className="text-xs font-semibold uppercase tracking-[0.2em] text-[#8b949e]">
+          <span className="text-xs font-semibold uppercase tracking-[0.2em] text-fg-muted">
             Org
           </span>
           <Select
@@ -308,7 +312,7 @@ export default function Commits() {
         </label>
 
         <label className="space-y-2 block">
-          <span className="text-xs font-semibold uppercase tracking-[0.2em] text-[#8b949e]">
+          <span className="text-xs font-semibold uppercase tracking-[0.2em] text-fg-muted">
             Repositório
           </span>
           <Select
@@ -340,16 +344,16 @@ export default function Commits() {
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -12 }}
-              className="rounded-2xl border border-[#30363d] bg-[#161b22] p-10"
+              className="rounded-2xl border border-line bg-surface p-10"
             >
               <div className="flex flex-col items-center justify-center gap-4 text-center">
                 <div className="relative">
-                  <div className="h-14 w-14 animate-spin rounded-full border-2 border-[#30363d] border-t-blue-500"></div>
+                  <div className="h-14 w-14 animate-spin rounded-full border-2 border-line border-t-blue-500"></div>
                   <GitCommit className="absolute inset-0 m-auto h-5 w-5 text-blue-400" />
                 </div>
                 <div className="space-y-1">
-                  <p className="text-lg font-semibold text-white">Loading commits</p>
-                  <p className="text-sm text-[#8b949e]">Fetching commits from GitHub API...</p>
+                  <p className="text-lg font-semibold text-fg-strong">Loading commits</p>
+                  <p className="text-sm text-fg-muted">Fetching commits from GitHub API...</p>
                 </div>
               </div>
             </motion.div>
@@ -360,7 +364,7 @@ export default function Commits() {
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: index * 0.05 }}
-                className="group bg-[#161b22] border border-[#30363d] rounded-xl overflow-hidden hover:border-[#8b949e]/50 transition-all hover:shadow-2xl hover:shadow-black/40"
+                className="group bg-surface border border-line rounded-xl overflow-hidden hover:border-fg-muted/50 transition-all hover:shadow-2xl hover:shadow-black/40"
               >
                 <a
                   href={commit.html_url}
@@ -368,12 +372,12 @@ export default function Commits() {
                   rel="noopener noreferrer"
                   className="flex items-center p-5 gap-6"
                 >
-                  <div className="hidden sm:flex flex-col items-center justify-center w-12 h-12 bg-[#21262d] rounded-xl border border-[#30363d] group-hover:bg-blue-500/10 group-hover:border-blue-500/30 transition-colors">
-                    <GitCommit className="w-6 h-6 text-[#8b949e] group-hover:text-blue-400" />
+                  <div className="hidden sm:flex flex-col items-center justify-center w-12 h-12 bg-muted rounded-xl border border-line group-hover:bg-blue-500/10 group-hover:border-blue-500/30 transition-colors">
+                    <GitCommit className="w-6 h-6 text-fg-muted group-hover:text-blue-400" />
                   </div>
 
                   <div className="flex-1 min-w-0 space-y-2">
-                    <div className="flex items-center gap-2 text-xs font-mono text-[#8b949e]">
+                    <div className="flex items-center gap-2 text-xs font-mono text-fg-muted">
                       {commit.repo && (
                         <>
                           <span className="text-blue-400 hover:text-blue-300 transition-colors">
@@ -382,7 +386,7 @@ export default function Commits() {
                           <span>•</span>
                         </>
                       )}
-                      <code className="px-2 py-0.5 bg-[#0d1117] rounded">
+                      <code className="px-2 py-0.5 bg-canvas rounded">
                         {commit.sha.substring(0, 7)}
                       </code>
                       <span>•</span>
@@ -391,22 +395,22 @@ export default function Commits() {
                         {formatDate(commit.commit.author.date)}
                       </span>
                     </div>
-                    <h3 className="text-lg font-semibold text-white group-hover:text-blue-400 transition-colors">
+                    <h3 className="text-lg font-semibold text-fg-strong group-hover:text-blue-400 transition-colors">
                       {commit.commit.message.split('\n')[0]}
                     </h3>
-                    <p className="text-sm text-[#8b949e]">
+                    <p className="text-sm text-fg-muted">
                       by {commit.author?.login || commit.commit.author.name}
                     </p>
                   </div>
 
-                  <ChevronRight className="w-5 h-5 text-[#30363d] group-hover:text-white transition-colors" />
+                  <ChevronRight className="w-5 h-5 text-line group-hover:text-fg-strong transition-colors" />
                 </a>
               </motion.div>
             ))
           ) : (
-            <div className="text-center py-20 bg-[#161b22] border border-dashed border-[#30363d] rounded-2xl">
-              <GitCommit className="w-12 h-12 text-[#30363d] mx-auto mb-4" />
-              <p className="text-[#8b949e]">
+            <div className="text-center py-20 bg-surface border border-dashed border-line rounded-2xl">
+              <GitCommit className="w-12 h-12 text-line mx-auto mb-4" />
+              <p className="text-fg-muted">
                 {commits.length > 0 ? 'No commits match the current filters.' : 'No commits found.'}
               </p>
             </div>
@@ -415,8 +419,8 @@ export default function Commits() {
       </div>
 
       {commits.length > 0 && (
-        <div className="flex flex-col gap-4 rounded-2xl border border-[#30363d] bg-[#161b22] p-4 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-sm text-[#8b949e]">
+        <div className="flex flex-col gap-4 rounded-2xl border border-line bg-surface p-4 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-sm text-fg-muted">
             Page {pagination.page} • {pagination.per_page} commits per page
           </p>
 
@@ -425,12 +429,12 @@ export default function Commits() {
               type="button"
               onClick={handlePrevPage}
               disabled={!pagination.has_prev}
-              className="rounded-xl border border-[#30363d] px-4 py-2 text-sm font-medium text-white transition disabled:cursor-not-allowed disabled:opacity-40 hover:border-blue-500 hover:text-blue-400"
+              className="rounded-xl border border-line px-4 py-2 text-sm font-medium text-fg-strong transition disabled:cursor-not-allowed disabled:opacity-40 hover:border-blue-500 hover:text-blue-400"
             >
               Previous
             </button>
 
-            <span className="min-w-24 text-center text-sm text-[#8b949e]">
+            <span className="min-w-24 text-center text-sm text-fg-muted">
               Page {pagination.page}
             </span>
 
@@ -438,7 +442,7 @@ export default function Commits() {
               type="button"
               onClick={handleNextPage}
               disabled={!pagination.has_next}
-              className="rounded-xl border border-[#30363d] px-4 py-2 text-sm font-medium text-white transition disabled:cursor-not-allowed disabled:opacity-40 hover:border-blue-500 hover:text-blue-400"
+              className="rounded-xl border border-line px-4 py-2 text-sm font-medium text-fg-strong transition disabled:cursor-not-allowed disabled:opacity-40 hover:border-blue-500 hover:text-blue-400"
             >
               Next
             </button>

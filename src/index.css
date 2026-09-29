@@ -1,1 +1,33 @@
 @import 'tailwindcss';
+
+:root {
+  --pr-canvas: #0d1117;
+  --pr-surface: #161b22;
+  --pr-muted: #21262d;
+  --pr-focus: #1c2128;
+  --pr-border: #30363d;
+  --pr-fg: #c9d1d9;
+  --pr-fg-strong: #ffffff;
+  --pr-fg-muted: #8b949e;
+}
+
+[data-theme='light'] {
+  --pr-canvas: #ffffff;
+  --pr-surface: #f6f8fa;
+  --pr-muted: #eaeef2;
+  --pr-focus: #ddf4ff;
+  --pr-border: #d0d7de;
+  --pr-fg: #1f2328;
+  --pr-fg-strong: #1f2328;
+  --pr-fg-muted: #656d76;
+}
+
+@theme inline {
+  --color-canvas: var(--pr-canvas);
+  --color-surface: var(--pr-surface);
+  --color-muted: var(--pr-muted);
+  --color-line: var(--pr-border);
+  --color-fg: var(--pr-fg);
+  --color-fg-strong: var(--pr-fg-strong);
+  --color-fg-muted: var(--pr-fg-muted);
+}

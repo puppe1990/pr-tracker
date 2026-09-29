@@ -10,11 +10,20 @@ import {
   Home,
   GitCommit,
   RefreshCw,
+  CircleDot,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import Select, { StylesConfig } from 'react-select';
 import Commits from './Commits';
 import RecentRepos from './RecentRepos';
+import Issues from './Issues';
+import { ColorSchemeToggle } from './ColorSchemeToggle';
+import {
+  applyColorScheme,
+  readStoredColorScheme,
+  toggleColorScheme,
+  type ColorScheme,
+} from './color-scheme';
 
 interface PR {
   id: number;
@@ -48,6 +57,7 @@ export default function App() {
   const [selectedLabel, setSelectedLabel] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
   const [refreshing, setRefreshing] = useState(false);
+  const [colorScheme, setColorScheme] = useState<ColorScheme>('dark');
 
   const fetchUserData = useCallback(async () => {
     try {
@@ -107,6 +117,12 @@ export default function App() {
 
   useEffect(() => {
     fetchUserData();
+  }, []);
+
+  useEffect(() => {
+    const stored = readStoredColorScheme(window.localStorage);
+    setColorScheme(stored);
+    applyColorScheme(stored, document.documentElement, window.localStorage);
   }, []);
 
   const getRepoName = (url: string) => {
@@ -169,8 +185,8 @@ export default function App() {
   const selectStyles: StylesConfig = {
     control: (base) => ({
       ...base,
-      backgroundColor: '#0d1117',
-      borderColor: '#30363d',
+      backgroundColor: 'var(--pr-canvas)',
+      borderColor: 'var(--pr-border)',
       borderRadius: '0.75rem',
       minHeight: '48px',
       boxShadow: 'none',
@@ -180,8 +196,8 @@ export default function App() {
     }),
     menu: (base) => ({
       ...base,
-      backgroundColor: '#161b22',
-      border: '1px solid #30363d',
+      backgroundColor: 'var(--pr-surface)',
+      border: '1px solid var(--pr-border)',
       borderRadius: '0.75rem',
       overflow: 'hidden',
     }),
@@ -191,40 +207,44 @@ export default function App() {
     }),
     option: (base, state) => ({
       ...base,
-      backgroundColor: state.isSelected ? '#21262d' : state.isFocused ? '#1c2128' : '#161b22',
-      color: '#c9d1d9',
+      backgroundColor: state.isSelected
+        ? 'var(--pr-muted)'
+        : state.isFocused
+          ? 'var(--pr-focus)'
+          : 'var(--pr-surface)',
+      color: 'var(--pr-fg)',
       borderRadius: '0.5rem',
       padding: '8px 12px',
       '&:active': {
-        backgroundColor: '#21262d',
+        backgroundColor: 'var(--pr-muted)',
       },
     }),
     singleValue: (base) => ({
       ...base,
-      color: '#c9d1d9',
+      color: 'var(--pr-fg)',
     }),
     placeholder: (base) => ({
       ...base,
-      color: '#8b949e',
+      color: 'var(--pr-fg-muted)',
     }),
     input: (base) => ({
       ...base,
-      color: '#c9d1d9',
+      color: 'var(--pr-fg)',
     }),
     dropdownIndicator: (base) => ({
       ...base,
-      color: '#8b949e',
+      color: 'var(--pr-fg-muted)',
       '&:hover': {
-        color: '#c9d1d9',
+        color: 'var(--pr-fg)',
       },
     }),
     indicatorSeparator: (base) => ({
       ...base,
-      backgroundColor: '#30363d',
+      backgroundColor: 'var(--pr-border)',
     }),
     noOptionsMessage: (base) => ({
       ...base,
-      color: '#8b949e',
+      color: 'var(--pr-fg-muted)',
     }),
   };
 
@@ -246,23 +266,23 @@ export default function App() {
 
   if (loading && !user) {
     return (
-      <div className="min-h-screen bg-[#0d1117] flex items-center justify-center">
+      <div className="min-h-screen bg-canvas flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#0d1117] text-[#c9d1d9] font-sans selection:bg-blue-500/30">
+    <div className="min-h-screen bg-canvas text-fg font-sans selection:bg-blue-500/30">
       {/* Header */}
-      <header className="border-b border-[#30363d] bg-[#161b22]/80 backdrop-blur-md sticky top-0 z-50">
+      <header className="border-b border-line bg-surface/80 backdrop-blur-md sticky top-0 z-50">
         <div className="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <a href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
-              <div className="bg-[#21262d] p-2 rounded-lg border border-[#30363d]">
-                <Home className="w-6 h-6 text-white" />
+              <div className="bg-muted p-2 rounded-lg border border-line">
+                <Home className="w-6 h-6 text-fg-strong" />
               </div>
-              <h1 className="text-lg font-semibold text-white tracking-tight">PR Tracker</h1>
+              <h1 className="text-lg font-semibold text-fg-strong tracking-tight">PR Tracker</h1>
             </a>
           </div>
 
@@ -272,8 +292,8 @@ export default function App() {
               className={({ isActive }) =>
                 `flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                   isActive
-                    ? 'text-white bg-[#21262d]'
-                    : 'text-[#8b949e] hover:text-white hover:bg-[#21262d]'
+                    ? 'text-fg-strong bg-muted'
+                    : 'text-fg-muted hover:text-fg-strong hover:bg-muted'
                 }`
               }
             >
@@ -281,12 +301,25 @@ export default function App() {
               <span className="hidden sm:inline">PRs</span>
             </NavLink>
             <NavLink
+              to="/issues"
+              className={({ isActive }) =>
+                `flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  isActive
+                    ? 'text-fg-strong bg-muted'
+                    : 'text-fg-muted hover:text-fg-strong hover:bg-muted'
+                }`
+              }
+            >
+              <CircleDot className="w-4 h-4" />
+              <span className="hidden sm:inline">Issues</span>
+            </NavLink>
+            <NavLink
               to="/commits"
               className={({ isActive }) =>
                 `flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                   isActive
-                    ? 'text-white bg-[#21262d]'
-                    : 'text-[#8b949e] hover:text-white hover:bg-[#21262d]'
+                    ? 'text-fg-strong bg-muted'
+                    : 'text-fg-muted hover:text-fg-strong hover:bg-muted'
                 }`
               }
             >
@@ -298,8 +331,8 @@ export default function App() {
               className={({ isActive }) =>
                 `flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                   isActive
-                    ? 'text-white bg-[#21262d]'
-                    : 'text-[#8b949e] hover:text-white hover:bg-[#21262d]'
+                    ? 'text-fg-strong bg-muted'
+                    : 'text-fg-muted hover:text-fg-strong hover:bg-muted'
                 }`
               }
             >
@@ -308,14 +341,22 @@ export default function App() {
             </NavLink>
           </nav>
 
-          {user ? (
-            <div className="flex items-center gap-4">
-              <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-[#21262d] rounded-full border border-[#30363d]">
+          <div className="flex items-center gap-3">
+            <ColorSchemeToggle
+              scheme={colorScheme}
+              onToggle={() => {
+                const next = toggleColorScheme(colorScheme);
+                setColorScheme(next);
+                applyColorScheme(next, document.documentElement, window.localStorage);
+              }}
+            />
+            {user ? (
+              <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-muted rounded-full border border-line">
                 <img src={user.avatar_url} alt={user.login} className="w-5 h-5 rounded-full" />
-                <span className="text-sm font-medium text-[#8b949e]">{user.login}</span>
+                <span className="text-sm font-medium text-fg-muted">{user.login}</span>
               </div>
-            </div>
-          ) : null}
+            ) : null}
+          </div>
         </div>
       </header>
 
@@ -335,21 +376,21 @@ export default function App() {
                     <KeyRound className="w-20 h-20 text-blue-500 relative" />
                   </div>
                   <div className="space-y-4 max-w-md">
-                    <h2 className="text-4xl font-bold text-white tracking-tight">
+                    <h2 className="text-4xl font-bold text-fg-strong tracking-tight">
                       Configure seu token
                     </h2>
-                    <p className="text-[#8b949e] text-lg">
+                    <p className="text-fg-muted text-lg">
                       Este app agora usa um Personal Access Token do GitHub no backend para listar
                       seus Pull Requests abertos.
                     </p>
                   </div>
-                  <div className="max-w-xl w-full rounded-2xl border border-[#30363d] bg-[#161b22] p-6 text-left">
-                    <p className="text-sm text-[#8b949e]">
-                      Defina <code className="text-white">GITHUB_PERSONAL_ACCESS_TOKEN</code> no
-                      arquivo <code className="text-white">.env</code> do servidor e reinicie a
+                  <div className="max-w-xl w-full rounded-2xl border border-line bg-surface p-6 text-left">
+                    <p className="text-sm text-fg-muted">
+                      Defina <code className="text-fg-strong">GITHUB_PERSONAL_ACCESS_TOKEN</code> no
+                      arquivo <code className="text-fg-strong">.env</code> do servidor e reinicie a
                       aplicação.
                     </p>
-                    <p className="text-sm text-[#8b949e] mt-3">
+                    <p className="text-sm text-fg-muted mt-3">
                       Status atual:{' '}
                       <span className={githubConfigured ? 'text-emerald-400' : 'text-amber-400'}>
                         {githubConfigured ? 'token detectado' : 'token ausente'}
@@ -361,10 +402,10 @@ export default function App() {
                 <div className="space-y-8">
                   <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
                     <div>
-                      <h2 className="text-3xl font-bold text-white tracking-tight">
+                      <h2 className="text-3xl font-bold text-fg-strong tracking-tight">
                         Seus Pull Requests
                       </h2>
-                      <p className="text-[#8b949e] mt-1">
+                      <p className="text-fg-muted mt-1">
                         Listando PRs abertos por você, do mais recente ao mais antigo.
                       </p>
                     </div>
@@ -373,7 +414,7 @@ export default function App() {
                         type="button"
                         onClick={handleRefresh}
                         disabled={refreshing}
-                        className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium text-[#8b949e] hover:text-white hover:bg-[#21262d] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium text-fg-muted hover:text-fg-strong hover:bg-muted transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
                         <span className="hidden sm:inline">Atualizar</span>
@@ -385,9 +426,9 @@ export default function App() {
                     </div>
                   </div>
 
-                  <div className="grid gap-3 rounded-2xl border border-[#30363d] bg-[#161b22] p-4 sm:grid-cols-3">
+                  <div className="grid gap-3 rounded-2xl border border-line bg-surface p-4 sm:grid-cols-3">
                     <label className="space-y-2">
-                      <span className="text-xs font-semibold uppercase tracking-[0.2em] text-[#8b949e]">
+                      <span className="text-xs font-semibold uppercase tracking-[0.2em] text-fg-muted">
                         Buscar
                       </span>
                       <input
@@ -395,12 +436,12 @@ export default function App() {
                         value={searchTerm}
                         onChange={(event) => setSearchTerm(event.target.value)}
                         placeholder="Título ou repositório"
-                        className="w-full rounded-xl border border-[#30363d] bg-[#0d1117] px-4 py-3 text-sm text-white outline-none transition focus:border-blue-500"
+                        className="w-full rounded-xl border border-line bg-canvas px-4 py-3 text-sm text-fg-strong outline-none transition focus:border-blue-500"
                       />
                     </label>
 
                     <label className="space-y-2">
-                      <span className="text-xs font-semibold uppercase tracking-[0.2em] text-[#8b949e]">
+                      <span className="text-xs font-semibold uppercase tracking-[0.2em] text-fg-muted">
                         Repositório
                       </span>
                       <Select
@@ -417,7 +458,7 @@ export default function App() {
                     </label>
 
                     <label className="space-y-2">
-                      <span className="text-xs font-semibold uppercase tracking-[0.2em] text-[#8b949e]">
+                      <span className="text-xs font-semibold uppercase tracking-[0.2em] text-fg-muted">
                         Label
                       </span>
                       <Select
@@ -449,18 +490,18 @@ export default function App() {
                           initial={{ opacity: 0, y: 12 }}
                           animate={{ opacity: 1, y: 0 }}
                           exit={{ opacity: 0, y: -12 }}
-                          className="rounded-2xl border border-[#30363d] bg-[#161b22] p-10"
+                          className="rounded-2xl border border-line bg-surface p-10"
                         >
                           <div className="flex flex-col items-center justify-center gap-4 text-center">
                             <div className="relative">
-                              <div className="h-14 w-14 animate-spin rounded-full border-2 border-[#30363d] border-t-blue-500"></div>
+                              <div className="h-14 w-14 animate-spin rounded-full border-2 border-line border-t-blue-500"></div>
                               <Github className="absolute inset-0 m-auto h-5 w-5 text-blue-400" />
                             </div>
                             <div className="space-y-1">
-                              <p className="text-lg font-semibold text-white">
+                              <p className="text-lg font-semibold text-fg-strong">
                                 Buscando dados no GitHub
                               </p>
-                              <p className="text-sm text-[#8b949e]">
+                              <p className="text-sm text-fg-muted">
                                 Carregando seus Pull Requests e metadados mais recentes.
                               </p>
                             </div>
@@ -473,7 +514,7 @@ export default function App() {
                             initial={{ opacity: 0, x: -20 }}
                             animate={{ opacity: 1, x: 0 }}
                             transition={{ delay: index * 0.05 }}
-                            className="group bg-[#161b22] border border-[#30363d] rounded-xl overflow-hidden hover:border-[#8b949e]/50 transition-all hover:shadow-2xl hover:shadow-black/40"
+                            className="group bg-surface border border-line rounded-xl overflow-hidden hover:border-fg-muted/50 transition-all hover:shadow-2xl hover:shadow-black/40"
                           >
                             {(() => {
                               const repoName = getRepoName(pr.repository_url);
@@ -486,12 +527,12 @@ export default function App() {
                                   rel="noopener noreferrer"
                                   className="flex items-center p-5 gap-6"
                                 >
-                                  <div className="hidden sm:flex flex-col items-center justify-center w-12 h-12 bg-[#21262d] rounded-xl border border-[#30363d] group-hover:bg-blue-500/10 group-hover:border-blue-500/30 transition-colors">
-                                    <GitPullRequest className="w-6 h-6 text-[#8b949e] group-hover:text-blue-400" />
+                                  <div className="hidden sm:flex flex-col items-center justify-center w-12 h-12 bg-muted rounded-xl border border-line group-hover:bg-blue-500/10 group-hover:border-blue-500/30 transition-colors">
+                                    <GitPullRequest className="w-6 h-6 text-fg-muted group-hover:text-blue-400" />
                                   </div>
 
                                   <div className="flex-1 min-w-0 space-y-2">
-                                    <div className="flex items-center gap-2 text-xs font-mono text-[#8b949e]">
+                                    <div className="flex items-center gap-2 text-xs font-mono text-fg-muted">
                                       <span className="hover:text-blue-400 transition-colors">
                                         {repoOwner}/{repoName}
                                       </span>
@@ -501,7 +542,7 @@ export default function App() {
                                         {formatDate(pr.created_at)}
                                       </span>
                                     </div>
-                                    <h3 className="text-lg font-semibold text-white truncate group-hover:text-blue-400 transition-colors">
+                                    <h3 className="text-lg font-semibold text-fg-strong truncate group-hover:text-blue-400 transition-colors">
                                       {pr.title}
                                     </h3>
                                     <div className="flex flex-wrap gap-2">
@@ -522,15 +563,15 @@ export default function App() {
                                   </div>
 
                                   <div className="flex items-center gap-4">
-                                    <div className="hidden md:flex items-center gap-2 text-[#8b949e]">
+                                    <div className="hidden md:flex items-center gap-2 text-fg-muted">
                                       <img
                                         src={pr.user.avatar_url}
-                                        className="w-6 h-6 rounded-full border border-[#30363d]"
+                                        className="w-6 h-6 rounded-full border border-line"
                                         alt={pr.user.login}
                                       />
                                       <span className="text-sm">{pr.user.login}</span>
                                     </div>
-                                    <ChevronRight className="w-5 h-5 text-[#30363d] group-hover:text-white transition-colors" />
+                                    <ChevronRight className="w-5 h-5 text-line group-hover:text-fg-strong transition-colors" />
                                   </div>
                                 </a>
                               );
@@ -538,9 +579,9 @@ export default function App() {
                           </motion.div>
                         ))
                       ) : (
-                        <div className="text-center py-20 bg-[#161b22] border border-dashed border-[#30363d] rounded-2xl">
-                          <GitPullRequest className="w-12 h-12 text-[#30363d] mx-auto mb-4" />
-                          <p className="text-[#8b949e]">
+                        <div className="text-center py-20 bg-surface border border-dashed border-line rounded-2xl">
+                          <GitPullRequest className="w-12 h-12 text-line mx-auto mb-4" />
+                          <p className="text-fg-muted">
                             {prs.length > 0
                               ? 'Nenhum Pull Request corresponde aos filtros atuais.'
                               : 'Nenhum Pull Request aberto encontrado.'}
@@ -551,8 +592,8 @@ export default function App() {
                   </div>
 
                   {filteredPrs.length > itemsPerPage ? (
-                    <div className="flex flex-col gap-4 rounded-2xl border border-[#30363d] bg-[#161b22] p-4 sm:flex-row sm:items-center sm:justify-between">
-                      <p className="text-sm text-[#8b949e]">
+                    <div className="flex flex-col gap-4 rounded-2xl border border-line bg-surface p-4 sm:flex-row sm:items-center sm:justify-between">
+                      <p className="text-sm text-fg-muted">
                         Mostrando{' '}
                         {Math.min((safeCurrentPage - 1) * itemsPerPage + 1, filteredPrs.length)}-
                         {Math.min(safeCurrentPage * itemsPerPage, filteredPrs.length)} de{' '}
@@ -564,12 +605,12 @@ export default function App() {
                           type="button"
                           onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
                           disabled={safeCurrentPage === 1}
-                          className="rounded-xl border border-[#30363d] px-4 py-2 text-sm font-medium text-white transition disabled:cursor-not-allowed disabled:opacity-40 hover:border-blue-500 hover:text-blue-400"
+                          className="rounded-xl border border-line px-4 py-2 text-sm font-medium text-fg-strong transition disabled:cursor-not-allowed disabled:opacity-40 hover:border-blue-500 hover:text-blue-400"
                         >
                           Anterior
                         </button>
 
-                        <span className="min-w-24 text-center text-sm text-[#8b949e]">
+                        <span className="min-w-24 text-center text-sm text-fg-muted">
                           Página {safeCurrentPage} de {totalPages}
                         </span>
 
@@ -577,7 +618,7 @@ export default function App() {
                           type="button"
                           onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
                           disabled={safeCurrentPage === totalPages}
-                          className="rounded-xl border border-[#30363d] px-4 py-2 text-sm font-medium text-white transition disabled:cursor-not-allowed disabled:opacity-40 hover:border-blue-500 hover:text-blue-400"
+                          className="rounded-xl border border-line px-4 py-2 text-sm font-medium text-fg-strong transition disabled:cursor-not-allowed disabled:opacity-40 hover:border-blue-500 hover:text-blue-400"
                         >
                           Próxima
                         </button>
@@ -588,14 +629,15 @@ export default function App() {
               )
             }
           />
+          <Route path="/issues" element={<Issues />} />
           <Route path="/commits" element={<Commits />} />
           <Route path="/repos-recentes" element={<RecentRepos />} />
         </Routes>
       </main>
 
       {/* Footer */}
-      <footer className="max-w-5xl mx-auto px-4 py-12 border-t border-[#30363d] mt-12">
-        <div className="flex flex-col md:flex-row justify-between items-center gap-6 text-[#8b949e] text-sm">
+      <footer className="max-w-5xl mx-auto px-4 py-12 border-t border-line mt-12">
+        <div className="flex flex-col md:flex-row justify-between items-center gap-6 text-fg-muted text-sm">
           <div className="flex items-center gap-2">
             <Github className="w-4 h-4" />
             <span>GitHub PR Tracker</span>
@@ -605,14 +647,14 @@ export default function App() {
               href="https://github.com"
               target="_blank"
               rel="noopener noreferrer"
-              className="hover:text-white transition-colors"
+              className="hover:text-fg-strong transition-colors"
             >
               GitHub API
             </a>
-            <a href="#" className="hover:text-white transition-colors">
+            <a href="#" className="hover:text-fg-strong transition-colors">
               Privacidade
             </a>
-            <a href="#" className="hover:text-white transition-colors">
+            <a href="#" className="hover:text-fg-strong transition-colors">
               Termos
             </a>
           </div>
