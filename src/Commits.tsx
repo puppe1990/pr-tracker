@@ -4,6 +4,7 @@ import { GitCommit, Clock, ChevronRight, AlertCircle, ArrowLeft, RefreshCw } fro
 import { motion, AnimatePresence } from 'motion/react';
 import Select, { StylesConfig } from 'react-select';
 import { getVisibleCommits, type Commit } from './commits-list';
+import { ListPageButtons } from './ListPageButtons';
 
 interface Repo {
   full_name: string;
@@ -127,18 +128,6 @@ export default function Commits() {
       hour: '2-digit',
       minute: '2-digit',
     }).format(date);
-  };
-
-  const handlePrevPage = () => {
-    if (pagination.has_prev) {
-      fetchCommits(pagination.page - 1);
-    }
-  };
-
-  const handleNextPage = () => {
-    if (pagination.has_next) {
-      fetchCommits(pagination.page + 1);
-    }
   };
 
   const handleRefresh = async () => {
@@ -424,29 +413,13 @@ export default function Commits() {
             Page {pagination.page} • {pagination.per_page} commits per page
           </p>
 
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={handlePrevPage}
-              disabled={!pagination.has_prev}
-              className="rounded-xl border border-line px-4 py-2 text-sm font-medium text-fg-strong transition disabled:cursor-not-allowed disabled:opacity-40 hover:border-blue-500 hover:text-blue-400"
-            >
-              Previous
-            </button>
-
-            <span className="min-w-24 text-center text-sm text-fg-muted">
-              Page {pagination.page}
-            </span>
-
-            <button
-              type="button"
-              onClick={handleNextPage}
-              disabled={!pagination.has_next}
-              className="rounded-xl border border-line px-4 py-2 text-sm font-medium text-fg-strong transition disabled:cursor-not-allowed disabled:opacity-40 hover:border-blue-500 hover:text-blue-400"
-            >
-              Next
-            </button>
-          </div>
+          <ListPageButtons
+            currentPage={pagination.page}
+            totalPages={null}
+            canGoPrevious={pagination.has_prev}
+            canGoNext={pagination.has_next}
+            onPageChange={(page) => fetchCommits(page)}
+          />
         </div>
       )}
     </div>

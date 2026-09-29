@@ -9,6 +9,7 @@ import {
   getVisibleIssues,
   type TrackerIssue,
 } from './issues-list';
+import { ListPageButtons } from './ListPageButtons';
 
 export default function Issues() {
   const itemsPerPage = 10;
@@ -339,27 +340,11 @@ export default function Issues() {
             {Math.min(visibleIssues.page * itemsPerPage, visibleIssues.total)} de{' '}
             {visibleIssues.total} issues
           </p>
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
-              disabled={visibleIssues.page === 1}
-              className="rounded-xl border border-line px-4 py-2 text-sm font-medium text-fg-strong transition disabled:cursor-not-allowed disabled:opacity-40 hover:border-blue-500 hover:text-blue-400"
-            >
-              Anterior
-            </button>
-            <span className="min-w-24 text-center text-sm text-fg-muted">
-              Página {visibleIssues.page} de {visibleIssues.totalPages}
-            </span>
-            <button
-              type="button"
-              onClick={() => setCurrentPage((page) => Math.min(visibleIssues.totalPages, page + 1))}
-              disabled={visibleIssues.page === visibleIssues.totalPages}
-              className="rounded-xl border border-line px-4 py-2 text-sm font-medium text-fg-strong transition disabled:cursor-not-allowed disabled:opacity-40 hover:border-blue-500 hover:text-blue-400"
-            >
-              Próxima
-            </button>
-          </div>
+          <ListPageButtons
+            currentPage={visibleIssues.page}
+            totalPages={visibleIssues.totalPages}
+            onPageChange={setCurrentPage}
+          />
         </div>
       ) : null}
     </div>
