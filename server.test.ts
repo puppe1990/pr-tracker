@@ -260,3 +260,56 @@ describe('GET /api/commits', () => {
     );
   });
 });
+
+describe('GET /api/issues', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    process.env.GITHUB_PERSONAL_ACCESS_TOKEN = 'test-token';
+  });
+
+  it('should return 503 if GitHub token is not configured', async () => {
+    const originalToken = process.env.GITHUB_PERSONAL_ACCESS_TOKEN;
+    delete process.env.GITHUB_PERSONAL_ACCESS_TOKEN;
+
+    const app = await createApp();
+    const response = await request(app).get('/api/issues');
+
+    expect(response.status).toBe(503);
+    expect(response.body).toHaveProperty('missingEnv', 'GITHUB_PERSONAL_ACCESS_TOKEN');
+
+    process.env.GITHUB_PERSONAL_ACCESS_TOKEN = originalToken;
+  });
+
+  it('should search open issues authored by the current user', async () => {
+    const mockIssues = [
+      {
+        id: 11,
+        title: 'Broken pagination',
+        html_url: 'https://github.com/org/alpha/issues/11',
+        created_at: '2024-01-01T00:00:00Z',
+        repository_url: 'https://api.github.com/repos/org/alpha',
+        user: { login: 'alice', avatar_url: '' },
+        labels: [],
+        state: 'open',
+      },
+    ];
+
+    (axios.get as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      data: { items: mockIssues },
+    });
+
+    const app = await createApp();
+    const response = await request(app).get('/api/issues');
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual(mockIssues);
+    expect(axios.get).toHaveBeenCalledWith(
+      'https://api.github.com/search/issues',
+      expect.objectContaining({
+        params: expect.objectContaining({
+          q: 'is:open is:issue author:@me',
+        }),
+      })
+    );
+  });
+});

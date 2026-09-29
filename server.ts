@@ -152,6 +152,23 @@ export async function createApp() {
     }
   });
 
+  app.get('/api/issues', async (_req, res) => {
+    if (!githubToken) {
+      return res.status(503).json({
+        error: 'GitHub token not configured',
+        missingEnv: 'GITHUB_PERSONAL_ACCESS_TOKEN',
+      });
+    }
+
+    try {
+      const items = await fetchAllSearchIssues('is:open is:issue author:@me');
+      res.json(items);
+    } catch (error) {
+      console.error('Issue Fetch Error:', error);
+      res.status(500).json({ error: 'Failed to fetch issues' });
+    }
+  });
+
   app.get('/api/repos', async (_req, res) => {
     if (!githubToken) {
       return res.status(503).json({

@@ -12,8 +12,11 @@ describe('Netlify production API wiring', () => {
     expect(netlifyToml).toContain('to = "/.netlify/functions/repos"');
     expect(netlifyToml).toContain('from = "/api/commits"');
     expect(netlifyToml).toContain('to = "/.netlify/functions/commits"');
+    expect(netlifyToml).toContain('from = "/api/issues"');
+    expect(netlifyToml).toContain('to = "/.netlify/functions/issues"');
 
     expect(fs.existsSync(path.join(projectRoot, 'netlify/functions/repos.mts'))).toBe(true);
     expect(fs.existsSync(path.join(projectRoot, 'netlify/functions/commits.mts'))).toBe(true);
+    expect(fs.existsSync(path.join(projectRoot, 'netlify/functions/issues.mts'))).toBe(true);
   });
 });
